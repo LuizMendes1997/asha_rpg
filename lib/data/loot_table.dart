@@ -29,7 +29,7 @@ class LootTable {
         }
         break;
 
-      case "Águia Real":
+      case "Aguia Real":
         droppedItems.add(ItemData.penaDourada.copy());
 
         break;

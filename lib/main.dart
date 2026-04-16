@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'models/game_state.dart';
-import 'screens/character_creation_screen.dart'; // Importe a nova tela
-import 'screens/main_shell.dart';
-import 'data/item_data.dart';
+import 'screens/character_creation_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();

@@ -211,7 +211,7 @@ class HeroModel {
       (populacaoCidadaos + populacaoMendigos) +
       (equippedArmor?.hpBonus ?? 0);
 
-  // --- MÉTODOS DE PROGRESSÃO ---
+  // --- MÉTODOS DE PROGRESSÃO ---git add .
 
   void gainExp(int amount) {
     exp += amount;

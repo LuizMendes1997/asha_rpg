@@ -44,23 +44,23 @@ class _VillageScreenState extends State<VillageScreen> {
     );
   }
 
-  // --- FUNÇÃO ATUALIZADA PARA ACEITAR IMAGEM ---
   Widget _regionCard(
     BuildContext context,
     String title,
     String subtitle,
-    String imagePath, // Mudamos para String
+    String imagePath,
     VoidCallback onTap,
   ) {
     return Card(
       color: Colors.grey[900]?.withOpacity(0.85),
       margin: const EdgeInsets.symmetric(vertical: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
         leading: Image.asset(
           imagePath,
           width: 40,
           height: 40,
-          filterQuality: FilterQuality.none, // Pixel art nítido
+          filterQuality: FilterQuality.none,
         ),
         title: Text(
           title,
@@ -83,14 +83,10 @@ class _VillageScreenState extends State<VillageScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Vila Kalirian"),
-        backgroundColor: Colors.brown[900]?.withOpacity(0.9),
-        elevation: 0,
-      ),
+      // Removido o AppBar para usar o Card customizado dentro do body
       body: Stack(
         children: [
-          // --- 1. IMAGEM DE FUNDO (WEBP) ---
+          // --- 1. IMAGEM DE FUNDO ---
           Container(
             width: double.infinity,
             height: double.infinity,
@@ -102,32 +98,91 @@ class _VillageScreenState extends State<VillageScreen> {
             ),
           ),
 
+          // Overlay escuro para destacar o conteúdo
           Container(color: Colors.black.withOpacity(0.3)),
 
           ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
             children: [
-              Text(
-                "STATUS: ${widget.hero.tituloNobre}".toUpperCase(),
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.amber,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                  shadows: [
-                    Shadow(
-                      blurRadius: 10,
-                      color: Colors.black,
-                      offset: Offset(2, 2),
-                    ),
-                  ],
+              // --- CABEÇALHO: NOME DA VILA EM CARD ---
+              Card(
+                elevation: 10,
+                color: Colors.indigo[900]?.withOpacity(0.85),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                  side: const BorderSide(color: Colors.amber, width: 1.5),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 16,
+                    horizontal: 8,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Image.asset(
+                        'assets/icons/vila.webp', // Ícone da Vila
+                        height: 32,
+                        filterQuality: FilterQuality.none,
+                      ),
+                      const SizedBox(width: 12),
+                      Flexible(
+                        child: Text(
+                          widget.hero.villageName.toUpperCase(),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.5,
+                            shadows: [
+                              Shadow(
+                                blurRadius: 8,
+                                color: Colors.black,
+                                offset: Offset(2, 2),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 20),
 
-              // CARD DA ESTALAGEM (JÁ COM IMAGEM)
+              const SizedBox(height: 12),
+
+              // --- STATUS NOBRE CENTRALIZADO ---
+              Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.amber.withOpacity(0.5)),
+                  ),
+                  child: Text(
+                    "👑 ${widget.hero.tituloNobre}".toUpperCase(),
+                    style: const TextStyle(
+                      color: Colors.amber,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // --- CARD DA ESTALAGEM ---
               Card(
                 color: Colors.grey[900]?.withOpacity(0.85),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: ListTile(
                   leading: Image.asset(
                     'assets/icons/casa.webp',
@@ -149,21 +204,27 @@ class _VillageScreenState extends State<VillageScreen> {
                   trailing: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue[800],
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                     onPressed: _descansar,
-                    child: const Text("DESCANSAR"),
+                    child: const Text(
+                      "DESCANSAR",
+                      style: TextStyle(color: Colors.white),
+                    ),
                   ),
                 ),
               ),
 
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
 
-              // CARD FINANCEIRO (AGORA COM IMAGEM)
+              // --- DEMAIS REGIÕES ---
               _regionCard(
                 context,
                 "Escritório de Finanças",
                 "Gerencie impostos e alimentos",
-                "assets/icons/financas.webp", // Ajuste o nome do arquivo se necessário
+                "assets/icons/financas.webp",
                 () {
                   Navigator.push(
                     context,
@@ -177,12 +238,11 @@ class _VillageScreenState extends State<VillageScreen> {
                 },
               ),
 
-              // CARD DE RECRUTAMENTO (AGORA COM IMAGEM)
               _regionCard(
                 context,
                 "Praça da Vila",
                 "Convide pessoas para morar aqui",
-                "assets/icons/praca.webp", // Ajuste o nome do arquivo se necessário
+                "assets/icons/praca.webp",
                 () {
                   Navigator.push(
                     context,
@@ -196,12 +256,11 @@ class _VillageScreenState extends State<VillageScreen> {
                 },
               ),
 
-              // Dentro do build da VillageScreen
               _regionCard(
                 context,
                 "Guilda",
-                "Os aventureiros se juntam para recolher recompensas de suas missões",
-                "assets/icons/praca.webp", // Ajuste o nome do arquivo se necessário
+                "Recompensas e missões de aventureiros",
+                "assets/icons/praca.webp", // Sugestão: troque para assets/icons/guilda.webp se tiver
                 () {
                   Navigator.push(
                     context,

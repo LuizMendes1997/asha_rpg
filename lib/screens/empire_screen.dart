@@ -14,31 +14,37 @@ class EmpireScreen extends StatefulWidget {
 }
 
 class _EmpireScreenState extends State<EmpireScreen> {
-  // Widget reutilizável para os botões de navegação
+  // Widget de Card atualizado para exibir as imagens .webp que você criou
   Widget _empireActionCard(
     String title,
     String sub,
-    IconData icon,
+    String imagePath,
     Color color,
     VoidCallback onTap,
   ) {
     return Card(
-      // Reduzi a opacidade para 0.4 para a imagem de fundo aparecer mais
       color: Colors.indigo[900]?.withOpacity(0.4),
       margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(
-          color: Colors.white10,
-          width: 0.5,
-        ), // Borda sutil
+        side: BorderSide(color: color.withOpacity(0.3), width: 1),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 20,
           vertical: 10,
         ),
-        leading: Icon(icon, color: color, size: 40),
+        // Exibe sua arte .webp (Chibi/Pixel) no lugar do ícone genérico
+        leading: Container(
+          width: 50,
+          height: 50,
+          child: Image.asset(
+            imagePath,
+            fit: BoxFit.contain,
+            // Mantém os pixels nítidos mesmo se a imagem original for pequena
+            filterQuality: FilterQuality.none,
+          ),
+        ),
         title: Text(
           title,
           style: const TextStyle(
@@ -65,37 +71,32 @@ class _EmpireScreenState extends State<EmpireScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      // AppBar com transparência para combinar com o visual
       appBar: AppBar(
-        title: Text("Império de Asha | Mendes I"),
+        title: const Text("Império de Asha | Mendes I"),
         backgroundColor: Colors.indigo[900]?.withOpacity(0.8),
         elevation: 0,
       ),
       body: Stack(
         children: [
-          // 1. IMAGEM DE FUNDO
+          // 1. IMAGEM DE FUNDO (Capa do Império)
           Container(
             width: double.infinity,
             height: double.infinity,
             decoration: const BoxDecoration(
               image: DecorationImage(
-                image: AssetImage(
-                  "assets/images/empire_bg.webp",
-                ), // Caminho da sua imagem
+                image: AssetImage("assets/images/empire_bg.webp"),
                 fit: BoxFit.cover,
-                // Filtro levemente escuro para não atrapalhar a leitura do texto
                 colorFilter: ColorFilter.mode(Colors.black54, BlendMode.darken),
               ),
             ),
           ),
 
-          // 2. CONTEÚDO (Interface)
+          // 2. CONTEÚDO DA INTERFACE
           Container(
             width: double.infinity,
             child: Column(
               children: [
                 const SizedBox(height: 30),
-                // Ícone sutil no topo
                 const Icon(Icons.fort_rounded, size: 60, color: Colors.white24),
                 const SizedBox(height: 10),
                 const Text(
@@ -118,11 +119,11 @@ class _EmpireScreenState extends State<EmpireScreen> {
                 ),
                 const SizedBox(height: 40),
 
-                // NAVEGAÇÃO PARA O MERCADO
+                // NAVEGAÇÃO COM OS ÍCONES CUSTOMIZADOS
                 _empireActionCard(
                   "Mercado Imperial",
                   "Venda seus materiais",
-                  Icons.shopping_cart_rounded,
+                  "assets/icons/mercado.webp",
                   Colors.blueAccent,
                   () => Navigator.push(
                     context,
@@ -134,11 +135,11 @@ class _EmpireScreenState extends State<EmpireScreen> {
                     ),
                   ),
                 ),
-                // NAVEGAÇÃO PARA A SALA DO TRONO
+
                 _empireActionCard(
                   "Sala do Trono",
-                  "Audiência com o Imperador e Tributos",
-                  Icons.gavel_rounded,
+                  "Audiência e Tributos",
+                  "assets/icons/trono.webp",
                   Colors.purpleAccent,
                   () => Navigator.push(
                     context,
@@ -150,11 +151,12 @@ class _EmpireScreenState extends State<EmpireScreen> {
                     ),
                   ),
                 ),
+
                 _empireActionCard(
-                  "Ferreiro do Imperio",
-                  "Melhore seus itens aqui",
-                  Icons.gavel_rounded,
-                  Colors.purpleAccent,
+                  "Ferreiro do Império",
+                  "Melhore seus itens",
+                  "assets/icons/ferreiro.webp",
+                  Colors.orangeAccent,
                   () => Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -165,6 +167,7 @@ class _EmpireScreenState extends State<EmpireScreen> {
                     ),
                   ),
                 ),
+
                 const Spacer(),
                 const Padding(
                   padding: EdgeInsets.only(bottom: 30),

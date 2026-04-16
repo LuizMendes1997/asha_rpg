@@ -16,66 +16,81 @@ class WorldMap extends StatelessWidget {
 
     List<Monster> inimigos = [];
     String mensagem = "";
-    String imagemFundo = "assets/backgrounds/default.webp";
+    String imagemFundo = "assets/images/mapamundo.webp";
 
-    // --- LÓGICA DE REGIÕES E ENCONTROS ---
     if (regiao == "Saida da Vila") {
       imagemFundo = "assets/images/entrada_vila.webp";
-
-      if (sorteio < 0.05) {
+      if (sorteio < 0.15) {
         inimigos = [MonsterData.aguiaReal];
         mensagem = "A sombra de uma lenda paira sobre você: Águia Real!";
-      } else if (sorteio < 0.15) {
+      } else if (sorteio < 0.45) {
         inimigos = [MonsterData.abelha, MonsterData.abelha, MonsterData.abelha];
         mensagem = "Um bando de abelhas cercou você!";
-      } else if (sorteio < 0.45) {
+      } else if (sorteio < 0.70) {
         inimigos = [MonsterData.cobra, MonsterData.cobra];
         mensagem = "Uma cobra venenosa bloqueia o caminho!";
-      } else if (sorteio < 0.85) {
+      } else if (sorteio < 0.93) {
         inimigos = [MonsterData.rato];
         mensagem = "Um rato, ataque!";
       }
     } else if (regiao == "Floresta Esquecida") {
-      imagemFundo = "assets/backgrounds/floresta.webp";
-
-      if (sorteio < 0.07) {
-        inimigos = [MonsterData.aranhaGigante];
+      imagemFundo = "assets/images/floresta.webp";
+      if (sorteio < 0.20) {
+        inimigos = [MonsterData.rainhaAranha];
         mensagem =
             "Teias por todo lado... A Aranha de Elite desce das árvores!";
-      } else if (sorteio < 0.20) {
+      } else if (sorteio < 0.45) {
         inimigos = [MonsterData.goblin, MonsterData.slime, MonsterData.goblin];
         mensagem = "Uma emboscada! Goblins e Slimes surgem do mato!";
-      } else if (sorteio < 0.50) {
+      } else if (sorteio < 0.70) {
         inimigos = [MonsterData.lobo, MonsterData.lobo];
         mensagem = "Lobos Selvagens cercam você rosnando!";
-      } else {
-        inimigos = [MonsterData.goblin];
-        mensagem = "Um Goblin solitário patrulha a área.";
+      } else if (sorteio < 0.93) {
+        inimigos = [MonsterData.slime];
+        mensagem = "Um slime na área.";
       }
     } else if (regiao == "Acampamento de Bandidos") {
-      imagemFundo = "assets/backgrounds/acampamento.webp";
-
-      if (sorteio < 0.60) {
-        // Exemplo usando monstros existentes enquanto você não cria os bandidos
-        inimigos = [MonsterData.goblin, MonsterData.goblin];
-        mensagem = "Os vigias do acampamento te avistaram!";
+      imagemFundo = "assets/images/acampamento.webp";
+      if (sorteio < 0.20) {
+        inimigos = [MonsterData.liderBandido];
+        mensagem = "O mais forte chegou, corraaaaa!";
+      } else if (sorteio < 0.45) {
+        inimigos = [MonsterData.viceLider];
+        mensagem = "O vice Lider te encara";
+      } else if (sorteio < 0.70) {
+        inimigos = [MonsterData.acougueiro];
+        mensagem = "Um açougueiro quer te matar!";
+      } else if (sorteio < 0.93) {
+        inimigos = [MonsterData.assasino];
+        mensagem = "Uma assasino!";
+      }
+    } else if (regiao == "Lagoa Encantada") {
+      imagemFundo = "assets/images/lagoa.webp";
+      if (sorteio < 0.20) {
+        inimigos = [MonsterData.leviata];
+        mensagem = "O mais forte chegou, corraaaaa!";
+      } else if (sorteio < 0.45) {
+        inimigos = [MonsterData.tritao];
+        mensagem = "O tritao te encara";
+      } else if (sorteio < 0.70) {
+        inimigos = [MonsterData.driade];
+        mensagem = "Uma driade corrompida quer te matar!";
+      } else if (sorteio < 0.93) {
+        inimigos = [MonsterData.verme];
+        mensagem = "Um Verme!";
       }
     }
 
-    // --- VERIFICAÇÃO DE ENCONTRO ---
     if (inimigos.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            "A área parece calma demais... você não encontrou nada.",
-          ),
+          content: Text("A área parece calma demais..."),
           backgroundColor: Colors.blueGrey,
         ),
       );
       return;
     }
 
-    // --- NAVEGAÇÃO PARA A BATALHA ---
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -84,7 +99,7 @@ class WorldMap extends StatelessWidget {
           enemies: inimigos,
           startMessage: mensagem,
           backgroundImage: imagemFundo,
-          onUpdate: onUpdate, // Passando a imagem do cenário!
+          onUpdate: onUpdate,
         ),
       ),
     ).then((_) => onUpdate());
@@ -93,73 +108,80 @@ class WorldMap extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text("MAPA DO MUNDO", style: TextStyle(letterSpacing: 2)),
-        backgroundColor: Colors.green[900],
+        title: const Text(
+          "MAPA DO MUNDO",
+          style: TextStyle(letterSpacing: 2, fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.black54,
+        elevation: 0,
         centerTitle: true,
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 10),
-            child: Text(
-              "ESCOLHA SEU DESTINO",
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.amber,
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage("assets/images/mapamundo.webp"),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 100, 16, 16),
+          children: [
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 10),
+              child: Text(
+                "ESCOLHA SEU DESTINO",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.amber,
+                  shadows: [Shadow(color: Colors.black, blurRadius: 8)],
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 10),
+            const SizedBox(height: 10),
 
-          _regionCard(
-            context,
-            "Saida da Vila",
-            "Campos abertos e perigos menores.",
-            Icons.holiday_village,
-            Colors.white,
-            () => _explorar(context, "Saida da Vila"),
-          ),
+            _regionCard(
+              context,
+              "Saida da Vila",
+              "Campos abertos e perigos menores.",
+              "assets/icons/mapamundo/vila.webp", // Caminho da sua imagem
+              Colors.white,
+              () => _explorar(context, "Saida da Vila"),
+            ),
 
-          _regionCard(
-            context,
-            "Floresta Esquecida",
-            "Árvores densas e feras selvagens.",
-            Icons.forest,
-            Colors.green[700]!,
-            () => _explorar(context, "Floresta Esquecida"),
-          ),
+            _regionCard(
+              context,
+              "Floresta Esquecida",
+              "Árvores densas e feras selvagens.",
+              "assets/icons/mapamundo/floresta.webp", // Caminho da sua imagem
+              Colors.greenAccent,
+              () => _explorar(context, "Floresta Esquecida"),
+            ),
 
-          _regionCard(
-            context,
-            "Acampamento de Bandidos",
-            "Nível Recomendado: 5 | Risco de Morte",
-            Icons.fireplace,
-            Colors.orange[900]!,
-            () => _explorar(context, "Acampamento de Bandidos"),
-          ),
+            _regionCard(
+              context,
+              "Acampamento de Bandidos",
+              "Nível Recomendado: 5 | Risco de Morte",
+              "assets/icons/mapamundo/acampamento.webp", // Caminho da sua imagem
+              Colors.orangeAccent,
+              () => _explorar(context, "Acampamento de Bandidos"),
+            ),
 
-          _regionCard(
-            context,
-            "Fronteira do Império",
-            "Bloqueado: Requer Nível 15",
-            Icons.security,
-            Colors.blueGrey[800]!,
-            () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    "Os guardas da fronteira não te deixam passar!",
-                  ),
-                ),
-              );
-            },
-          ),
-        ],
+            _regionCard(
+              context,
+              "Lagoa Encantada",
+              "Bloqueado: Requer Nível 15",
+              "assets/icons/mapamundo/lagoa.webp", // Caminho da sua imagem
+              Colors.lightBlueAccent,
+              () => _explorar(context, "Lagoa Encantada"),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -168,34 +190,46 @@ class WorldMap extends StatelessWidget {
     BuildContext context,
     String title,
     String subtitle,
-    IconData icon,
-    Color color,
+    String imagePath, // Agora recebe o caminho da imagem
+    Color borderColor,
     VoidCallback onTap,
   ) {
     return Card(
-      color: Colors.grey[900],
-      elevation: 4,
-      margin: const EdgeInsets.only(bottom: 12),
+      color: Colors.black.withOpacity(0.7),
+      elevation: 8,
+      margin: const EdgeInsets.only(bottom: 16),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: Colors.white10, width: 1),
+        borderRadius: BorderRadius.circular(15),
+        side: BorderSide(color: borderColor.withOpacity(0.5), width: 1),
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        leading: Icon(icon, color: color, size: 36),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        // Substituído o Icon por Image.asset
+        leading: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Image.asset(
+            imagePath,
+            width: 50, // Tamanho ideal ajustado no widget
+            height: 50,
+            fit: BoxFit.cover,
+            // Fallback caso a imagem não carregue
+            errorBuilder: (context, error, stackTrace) =>
+                const Icon(Icons.broken_image, color: Colors.red, size: 50),
+          ),
+        ),
         title: Text(
           title.toUpperCase(),
           style: const TextStyle(
             fontWeight: FontWeight.bold,
             color: Colors.white,
-            fontSize: 14,
+            fontSize: 15,
           ),
         ),
         subtitle: Text(
           subtitle,
-          style: const TextStyle(color: Colors.white60, fontSize: 12),
+          style: const TextStyle(color: Colors.white70, fontSize: 13),
         ),
-        trailing: const Icon(Icons.chevron_right, color: Colors.white24),
+        trailing: const Icon(Icons.chevron_right, color: Colors.amber),
         onTap: onTap,
       ),
     );
