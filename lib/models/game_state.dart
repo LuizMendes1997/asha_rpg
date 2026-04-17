@@ -206,10 +206,9 @@ class HeroModel {
   }
 
   // HP Máximo Total
-  int get totalMaxHp =>
-      maxHp +
-      (populacaoCidadaos + populacaoMendigos) +
-      (equippedArmor?.hpBonus ?? 0);
+int get totalMaxHp =>
+    maxHp +
+    (equippedArmor?.hpBonus ?? 0);
 
   // --- MÉTODOS DE PROGRESSÃO ---git add .
 
