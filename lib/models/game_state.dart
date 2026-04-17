@@ -50,7 +50,32 @@ class Item {
     );
   }
 }
+// Dentro da classe HeroModel em game_state.dart
 
+String get nomeTituloLinhagem {
+  if (raca == Raca.elfo) {
+    if (nivelLinhagem >= 20) return "Deidade Élfica";
+    if (nivelLinhagem >= 15) return "Santo Arcanista";
+    if (nivelLinhagem >= 10) return "Guerreiro Superior";
+    if (nivelLinhagem >= 5)  return "Sentinela da Floresta";
+    return "Elfo Comum";
+  } 
+  
+  if (raca == Raca.dragoniano) {
+    if (nivelLinhagem >= 20) return "Imperador Eterno";
+    if (nivelLinhagem >= 15) return "Soberano do Caos";
+    if (nivelLinhagem >= 10) return "Lorde Dragão";
+    if (nivelLinhagem >= 5)  return "Drakon de Elite";
+    return "Dragoniano Menor";
+  }
+
+  // Padrão para Humano
+  if (nivelLinhagem >= 20) return "Deus Humano";
+  if (nivelLinhagem >= 15) return "Semideus da Guerra";
+  if (nivelLinhagem >= 10) return "Mestre de Armas";
+  if (nivelLinhagem >= 5)  return "Guerreiro";
+  return "Plebeu";
+}
 class Monster {
   final String name;
   final int hp;
