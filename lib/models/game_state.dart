@@ -122,10 +122,7 @@ class HeroModel {
   int totalDoado = 0;
   String tituloNobre = "Plebeu";
   int rankNobre = 0;
-  // Configurações de Finanças
-  final int precoAlimento = 1;
-  final int producaoPorCivil = 3; // 3 ouros
-  final int horasParaProduzir = 2;
+
   void processarFinancas() {
     int totalPessoas = populacaoCidadaos + populacaoMendigos;
     if (totalPessoas <= 0) return;
@@ -140,14 +137,14 @@ class HeroModel {
   }
 
   int get bonusSTR {
-    if (raca == Raca.dragoniano) return 5 * (nivelLinhagem + 1);
-    if (raca == Raca.humano) return 2 * (nivelLinhagem + 1);
+    if (raca == Raca.dragoniano) return 5 * nivelLinhagem;
+    if (raca == Raca.humano) return 2 * nivelLinhagem;
     return 0;
   }
 
   int get bonusDEF {
-    if (raca == Raca.elfo) return 5 * (nivelLinhagem + 1);
-    return 2 * (nivelLinhagem + 1);
+    if (raca == Raca.elfo) return 5 * nivelLinhagem;
+    return 2 * nivelLinhagem;
   }
 
   // Quando o jogador evolui no Local de Evolução:
