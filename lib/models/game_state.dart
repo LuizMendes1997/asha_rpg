@@ -1,4 +1,5 @@
-import 'quest_model.dart';
+import 'package:flutter/material.dart';
+import 'quest_model.dart'; // Mantive o import pois HeroModel usa a classe Quest
 
 enum Raca { humano, elfo, dragoniano }
 
@@ -7,14 +8,15 @@ enum ItemType { weapon, armor, helmet, boots, necklace, ring, potion, material }
 class Item {
   final String name;
   final ItemType type;
-  final int power; // Poder base (Ex: Espada = 10)
+  final int power; 
   final int price;
   final String iconPath;
   int quantity;
   final bool isStackable;
-  int level; // <--- NOVO: Nível de refino (0, 1, 2...)
-  final int def; // Adicione se não tiver
+  int level; 
+  final int def; 
   final int hpBonus;
+
   Item({
     required this.name,
     required this.type,
@@ -25,14 +27,10 @@ class Item {
     this.isStackable = true,
     this.level = 0,
     this.def = 0,
-    this.hpBonus = 0, // Começa no zero
+    this.hpBonus = 0,
   });
 
-  // Cálculo de poder: Poder Base + (Nível * 2)
-  // Use isso na hora de calcular o dano na BattleScreen!
   int get totalPower => power + (level * 2);
-
-  // Nome dinâmico: "Espada Curta +2"
   String get displayName => level > 0 ? "$name +$level" : name;
 
   Item copy() {
@@ -46,58 +44,54 @@ class Item {
       price: price,
       quantity: quantity,
       isStackable: isStackable,
-      level: level, // Não esqueça de copiar o level!
+      level: level,
     );
   }
 }
-// Dentro da classe HeroModel em game_state.dart
 
-String get nomeTituloLinhagem {
-  if (raca == Raca.elfo) {
-    if (nivelLinhagem >= 20) return "Deidade Élfica";
-    if (nivelLinhagem >= 15) return "Santo Arcanista";
-    if (nivelLinhagem >= 10) return "Guerreiro Superior";
-    if (nivelLinhagem >= 5)  return "Sentinela da Floresta";
-    return "Elfo Comum";
-  } 
-  
-  if (raca == Raca.dragoniano) {
-    if (nivelLinhagem >= 20) return "Imperador Eterno";
-    if (nivelLinhagem >= 15) return "Soberano do Caos";
-    if (nivelLinhagem >= 10) return "Lorde Dragão";
-    if (nivelLinhagem >= 5)  return "Drakon de Elite";
-    return "Dragoniano Menor";
-  }
-
-  // Padrão para Humano
-  if (nivelLinhagem >= 20) return "Deus Humano";
-  if (nivelLinhagem >= 15) return "Semideus da Guerra";
-  if (nivelLinhagem >= 10) return "Mestre de Armas";
-  if (nivelLinhagem >= 5)  return "Guerreiro";
-  return "Plebeu";
-}
 class Monster {
   final String name;
   final int hp;
   final int atk;
   final int expValue;
-  final String imagePath; // <--- O caminho para o seu WebP 32x32 ou maior
+  final String imagePath; 
   final bool isBoss;
+
   Monster({
     required this.name,
     required this.hp,
     required this.atk,
     required this.expValue,
     required this.imagePath,
-    this.isBoss = false, // Torne obrigatório
+    this.isBoss = false,
   });
 }
 
 class HeroModel {
-  Raca raca;
-  int nivelLinhagem = 0;
+  // --- ATRIBUTOS BÁSICOS ---
   String name;
-  int hp, maxHp, gold, str;
+  Raca raca;
+  int level;
+  int exp;
+  int nextLevelExp;
+  int hp;
+  int maxHp;
+  int gold;
+  int str;
+  String villageName;
+
+  // --- LINHAGEM E NOBREZA ---
+  int nivelLinhagem;
+  int totalDoado;
+
+  // --- VILA E ECONOMIA ---
+  int populacaoCidadaos;
+  int populacaoMendigos;
+  int limiteMendigos;
+  int ouroAcumuladoVila;
+  final double producaoPorHabitante = 0.5;
+
+  // --- EQUIPAMENTOS E INVENTÁRIO ---
   List<Item> warehouse = [];
   Item? equippedWeapon;
   Item? equippedArmor;
@@ -106,35 +100,59 @@ class HeroModel {
   Item? equippedNecklace;
   Item? equippedRing;
   Item? equippedRing2;
-  int level = 1;
-  String villageName;
-  int exp = 0;
-  int nextLevelExp = 100;
-  bool get podeAventurar => hp > 0;
-  // --- NOVAS VARIÁVEIS DE POPULAÇÃO ---
-  int populacaoCidadaos = 0;
-  int populacaoMendigos = 0;
-  int limiteMendigos = 3;
-  final double producaoPorHabitante = 0.5;
-  int ouroAcumuladoVila = 0;
-  DateTime? ultimaColeta;
-  // --- NOVAS VARIÁVEIS DE NOBREZA ---
-  int totalDoado = 0;
-  String tituloNobre = "Plebeu";
-  int rankNobre = 0;
+  List<Quest> activeQuests = [];
 
-  void processarFinancas() {
-    int totalPessoas = populacaoCidadaos + populacaoMendigos;
-    if (totalPessoas <= 0) return;
+  HeroModel({
+    this.name = "Mendigo",
+    this.raca = Raca.humano,
+    this.level = 1,
+    this.exp = 0,
+    this.nextLevelExp = 100,
+    this.hp = 100,
+    this.maxHp = 100,
+    this.gold = 0,
+    this.str = 10,
+    this.villageName = "Vila Inicial",
+    this.nivelLinhagem = 1,
+    this.totalDoado = 0,
+    this.populacaoCidadaos = 0,
+    this.populacaoMendigos = 0,
+    this.limiteMendigos = 3,
+    this.ouroAcumuladoVila = 0,
+  });
 
-    // Ouro gerado diretamente pela quantidade de pessoas
-    int geracaoDesteCiclo = (totalPessoas * producaoPorHabitante).toInt();
+  // --- TÍTULOS DINÂMICOS (PARA RANKING) ---
 
-    // Garantir que pelo menos 1 de ouro seja gerado se houver gente
-    if (geracaoDesteCiclo <= 0 && totalPessoas > 0) geracaoDesteCiclo = 1;
-
-    ouroAcumuladoVila += geracaoDesteCiclo;
+  String get nomeTituloLinhagem {
+    if (raca == Raca.elfo) {
+      if (nivelLinhagem >= 20) return "Deidade Élfica";
+      if (nivelLinhagem >= 15) return "Santo Arcanista";
+      if (nivelLinhagem >= 10) return "Guerreiro Superior";
+      if (nivelLinhagem >= 5)  return "Sentinela da Floresta";
+      return "Elfo Comum";
+    } 
+    if (raca == Raca.dragoniano) {
+      if (nivelLinhagem >= 20) return "Imperador Eterno";
+      if (nivelLinhagem >= 15) return "Soberano do Caos";
+      if (nivelLinhagem >= 10) return "Lorde Dragão";
+      if (nivelLinhagem >= 5)  return "Drakon de Elite";
+      return "Dragoniano Menor";
+    }
+    if (nivelLinhagem >= 20) return "Deus Humano";
+    if (nivelLinhagem >= 15) return "Semideus da Guerra";
+    if (nivelLinhagem >= 10) return "Mestre de Armas";
+    if (nivelLinhagem >= 5)  return "Guerreiro";
+    return "Plebeu";
   }
+
+  String get tituloNobre {
+    if (totalDoado >= 10000) return "Barão";
+    if (totalDoado >= 2000) return "Cavaleiro";
+    if (totalDoado >= 500) return "Escudeiro";
+    return "Plebeu";
+  }
+
+  // --- CÁLCULOS DE ATRIBUTOS (GETTERS) ---
 
   int get bonusSTR {
     if (raca == Raca.dragoniano) return 5 * nivelLinhagem;
@@ -147,45 +165,71 @@ class HeroModel {
     return 2 * nivelLinhagem;
   }
 
-  // Quando o jogador evolui no Local de Evolução:
+  int get totalStr => str + bonusSTR + 
+      (equippedWeapon?.totalPower ?? 0) + 
+      (equippedRing?.totalPower ?? 0) + 
+      (equippedRing2?.totalPower ?? 0);
+
+  int get totalDef => bonusDEF + 
+      (equippedArmor?.def ?? 0) + 
+      (equippedHelmet?.def ?? 0) + 
+      (equippedBoots?.def ?? 0);
+
+  int get totalMaxHp => maxHp + (equippedArmor?.hpBonus ?? 0);
+
+  bool get podeAventurar => hp > 0;
+
+  // --- MÉTODOS DE PROGRESSÃO ---
+
+  void gainExp(int amount) {
+    exp += amount;
+    while (exp >= nextLevelExp) {
+      level++;
+      exp -= nextLevelExp;
+      nextLevelExp = (nextLevelExp * 1.5).toInt();
+      maxHp += 10;
+      hp = totalMaxHp; 
+      str += 2;
+    }
+    calculateStats();
+  }
+
   void evoluirLinhagem() {
     nivelLinhagem++;
-    calculateStats(); // Recalcula tudo com os novos bônus
+    calculateStats();
   }
-  // Remova o método comprarComida, pois não haverá mais estoque de comida
 
   void calculateStats() {
-    // Como você usa Getters (totalStr, totalMaxHp),
-    // basta garantir que o HP atual não ultrapasse o novo máximo
-    if (hp > totalMaxHp) {
-      hp = totalMaxHp;
-    }
-    // Se você tiver outros cálculos complexos no futuro, coloque-os aqui.
+    if (hp > totalMaxHp) hp = totalMaxHp;
   }
 
-  // Requisitos para a Sala do Trono
-  static const List<Map<String, dynamic>> requisitosNobreza = [
-    {"titulo": "Plebeu", "minDoado": 0},
-    {"titulo": "Escudeiro", "minDoado": 500},
-    {"titulo": "Cavaleiro", "minDoado": 2000},
-    {"titulo": "Barão", "minDoado": 10000},
-  ];
+  // --- ECONOMIA DA VILA ---
 
-  HeroModel({
-    this.raca = Raca.humano, // Valor padrão: Humano
-    this.nivelLinhagem = 1, // Começa no nível 1 da linhagem
-    this.name = "Mendigo",
-    this.hp = 100,
-    this.maxHp = 100,
-    this.villageName = "Vila Inicial",
-    this.gold = 0,
-    this.str = 10,
-  });
+  void processarFinancas() {
+    int totalPessoas = populacaoCidadaos + populacaoMendigos;
+    if (totalPessoas <= 0) return;
+    int geracao = (totalPessoas * producaoPorHabitante).toInt();
+    if (geracao <= 0) geracao = 1;
+    ouroAcumuladoVila += geracao;
+  }
 
-  // --- GETTERS CALCULADOS ---
-  List<Quest> activeQuests = [];
+  void doar(int valor) {
+    if (gold >= valor) {
+      gold -= valor;
+      totalDoado += valor;
+    }
+  }
 
-  // Método para chamar quando um monstro morre na BattleScreen
+  bool adicionarMendigo() {
+    if (populacaoMendigos < limiteMendigos) {
+      populacaoMendigos++;
+      return true;
+    }
+    return false;
+  }
+
+  // --- QUESTS E COMBATE ---
+
   void onMonsterDefeated(String monsterName) {
     for (var quest in activeQuests) {
       if (quest.targetMonsterName == monsterName && !quest.isCompleted) {
@@ -205,74 +249,7 @@ class HeroModel {
     }
   }
 
-  // Força total com a arma
-  int get totalStr {
-    int bonus = 0;
-    bonus += bonusSTR; // Bônus da Raça/Linhagem
-    bonus += equippedWeapon?.totalPower ?? 0;
-    bonus += equippedRing?.totalPower ?? 0;
-    bonus += equippedRing2?.totalPower ?? 0; // Somando o Anel 2
-    return str + bonus;
-  }
-
-  // Defesa total: Agora sem calças e luvas
-  int get totalDef {
-    int defBonus = 0;
-    defBonus += bonusDEF; // Bônus da Raça/Linhagem
-    defBonus += equippedArmor?.def ?? 0;
-    defBonus += equippedHelmet?.def ?? 0;
-    defBonus += equippedBoots?.def ?? 0;
-
-    // Se a armadura/elmo também tiverem "power" (como no nosso Tier 4 e 5), some aqui se desejar
-    return defBonus;
-  }
-
-  // HP Máximo Total
-int get totalMaxHp =>
-    maxHp +
-    (equippedArmor?.hpBonus ?? 0);
-
-  // --- MÉTODOS DE PROGRESSÃO ---git add .
-
-  void gainExp(int amount) {
-    exp += amount;
-    while (exp >= nextLevelExp) {
-      _levelUp();
-    }
-  }
-
-  void _levelUp() {
-    level++;
-    exp -= nextLevelExp;
-    nextLevelExp = (nextLevelExp * 1.5).toInt();
-    maxHp += 10;
-    hp = totalMaxHp; // Cura total baseada no novo máximo com bônus
-    str += 2;
-    calculateStats();
-  }
-
-  // --- MÉTODOS DE POPULAÇÃO ---
-
-  bool adicionarMendigo() {
-    if (populacaoMendigos < limiteMendigos) {
-      populacaoMendigos++;
-      return true;
-    }
-    return false;
-  }
-
-  // --- MÉTODOS DE NOBREZA (TRIBUTOS) ---
-
-  void doar(int valor) {
-    if (gold >= valor) {
-      gold -= valor;
-      totalDoado += valor;
-    }
-  }
-
-  // --- GESTÃO DE ITENS ---
-
-  // --- GESTÃO DE ITENS (ATUALIZADA) ---
+  // --- GESTÃO DE INVENTÁRIO ---
 
   void addItem(Item newItem) {
     if (newItem.isStackable) {
@@ -282,97 +259,43 @@ int get totalMaxHp =>
         return;
       }
     }
-    // Adiciona uma cópia para evitar problemas de referência
     warehouse.add(newItem.copy());
   }
 
   void equipItem(Item item) {
-    // Função auxiliar para devolver item antigo ao armazém
-    void swap(Item? current) {
-      if (current != null) addItem(current);
-    }
+    void swap(Item? current) { if (current != null) addItem(current); }
 
     switch (item.type) {
-      case ItemType.weapon:
-        swap(equippedWeapon);
-        equippedWeapon = item;
-        break;
-      case ItemType.armor:
-        swap(equippedArmor);
-        equippedArmor = item;
-        break;
-      case ItemType.helmet:
-        swap(equippedHelmet);
-        equippedHelmet = item;
-        break;
-      case ItemType.boots:
-        swap(equippedBoots);
-        equippedBoots = item;
-        break;
-      case ItemType.necklace:
-        swap(equippedNecklace);
-        equippedNecklace = item;
-        break;
+      case ItemType.weapon: swap(equippedWeapon); equippedWeapon = item; break;
+      case ItemType.armor: swap(equippedArmor); equippedArmor = item; break;
+      case ItemType.helmet: swap(equippedHelmet); equippedHelmet = item; break;
+      case ItemType.boots: swap(equippedBoots); equippedBoots = item; break;
+      case ItemType.necklace: swap(equippedNecklace); equippedNecklace = item; break;
       case ItemType.ring:
-        // Lógica para 2 anéis:
-        if (equippedRing == null) {
-          equippedRing = item;
-        } else if (equippedRing2 == null) {
-          equippedRing2 = item;
-        } else {
-          // Se ambos estão cheios, troca o primeiro
-          swap(equippedRing);
-          equippedRing = item;
-        }
+        if (equippedRing == null) equippedRing = item;
+        else if (equippedRing2 == null) equippedRing2 = item;
+        else { swap(equippedRing); equippedRing = item; }
         break;
-      default:
-        return; // Itens tipo Poção ou Material não equipam
+      default: return;
     }
-
     warehouse.remove(item);
     calculateStats();
   }
 
-  // NOVO MÉTODO: Para retirar o item e ele voltar a ser vendável
-  // No HeroModel, adicione o parâmetro 'type' entre os parênteses:
   void unequipItem(ItemType type, {bool isSecondSlot = false}) {
     Item? removed;
-
     switch (type) {
-      case ItemType.weapon:
-        removed = equippedWeapon;
-        equippedWeapon = null;
-        break;
-      case ItemType.armor:
-        removed = equippedArmor;
-        equippedArmor = null;
-        break;
-      case ItemType.helmet:
-        removed = equippedHelmet;
-        equippedHelmet = null;
-        break;
-      case ItemType.boots:
-        removed = equippedBoots;
-        equippedBoots = null;
-        break;
-      case ItemType.necklace:
-        removed = equippedNecklace;
-        equippedNecklace = null;
-        break;
+      case ItemType.weapon: removed = equippedWeapon; equippedWeapon = null; break;
+      case ItemType.armor: removed = equippedArmor; equippedArmor = null; break;
+      case ItemType.helmet: removed = equippedHelmet; equippedHelmet = null; break;
+      case ItemType.boots: removed = equippedBoots; equippedBoots = null; break;
+      case ItemType.necklace: removed = equippedNecklace; equippedNecklace = null; break;
       case ItemType.ring:
-        // Se você tiver uma lógica na UI para o anel 2:
-        if (isSecondSlot) {
-          removed = equippedRing2;
-          equippedRing2 = null;
-        } else {
-          removed = equippedRing;
-          equippedRing = null;
-        }
+        if (isSecondSlot) { removed = equippedRing2; equippedRing2 = null; }
+        else { removed = equippedRing; equippedRing = null; }
         break;
-      default:
-        break;
+      default: break;
     }
-
     if (removed != null) {
       addItem(removed);
       calculateStats();
