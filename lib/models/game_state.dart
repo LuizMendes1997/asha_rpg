@@ -1,10 +1,5 @@
-<<<<<<< HEAD
-import 'quest_model.dart'; // Mantive o import pois HeroModel usa a classe Quest
+import 'quest_model.dart';
 import 'package:flutter/material.dart';
-=======
-import 'package:flutter/material.dart';
-import 'quest_model.dart'; // Mantive o import pois HeroModel usa a classe Quest
->>>>>>> 45f4c4f6de3a178042976e4188ab50f261dbee19
 
 enum Raca { humano, elfo, dragoniano }
 
@@ -13,22 +8,13 @@ enum ItemType { weapon, armor, helmet, boots, necklace, ring, potion, material }
 class Item {
   final String name;
   final ItemType type;
-<<<<<<< HEAD
   final int power;
-=======
-  final int power; 
->>>>>>> 45f4c4f6de3a178042976e4188ab50f261dbee19
   final int price;
   final String iconPath;
   int quantity;
   final bool isStackable;
-<<<<<<< HEAD
   int level;
   final int def;
-=======
-  int level; 
-  final int def; 
->>>>>>> 45f4c4f6de3a178042976e4188ab50f261dbee19
   final int hpBonus;
 
   Item({
@@ -43,14 +29,12 @@ class Item {
     this.def = 0,
     this.hpBonus = 0,
   });
-<<<<<<< HEAD
+
   int get totalDef => def + (level * 2);
   int get totalHpBonus => hpBonus + (level * 5);
-=======
-
->>>>>>> 45f4c4f6de3a178042976e4188ab50f261dbee19
   int get totalPower => power + (level * 2);
   String get displayName => level > 0 ? "$name +$level" : name;
+
   Map<String, dynamic> get mainStat {
     if (power > 0) {
       return {
@@ -101,11 +85,7 @@ class Monster {
   final int atk;
   final int def;
   final int expValue;
-<<<<<<< HEAD
   final String imagePath;
-=======
-  final String imagePath; 
->>>>>>> 45f4c4f6de3a178042976e4188ab50f261dbee19
   final bool isBoss;
 
   Monster({
@@ -120,7 +100,6 @@ class Monster {
 }
 
 class HeroModel {
-  // --- ATRIBUTOS BÁSICOS ---
   String name;
   Raca raca;
   int level;
@@ -130,24 +109,16 @@ class HeroModel {
   int maxHp;
   int gold;
   int str;
-<<<<<<< HEAD
   int def;
-=======
->>>>>>> 45f4c4f6de3a178042976e4188ab50f261dbee19
   String villageName;
-
-  // --- LINHAGEM E NOBREZA ---
   int nivelLinhagem;
   int totalDoado;
-
-  // --- VILA E ECONOMIA ---
   int populacaoCidadaos;
   int populacaoMendigos;
   int limiteMendigos;
   int ouroAcumuladoVila;
   final double producaoPorHabitante = 0.5;
 
-  // --- EQUIPAMENTOS E INVENTÁRIO ---
   List<Item> warehouse = [];
   Item? equippedWeapon;
   Item? equippedArmor;
@@ -164,18 +135,11 @@ class HeroModel {
     this.level = 1,
     this.exp = 0,
     this.nextLevelExp = 100,
-<<<<<<< HEAD
-    this.hp = 0,
-    this.maxHp = 0,
-    this.gold = 0,
-    this.str = 0,
-    this.def = 0,
-=======
     this.hp = 100,
     this.maxHp = 100,
     this.gold = 0,
     this.str = 10,
->>>>>>> 45f4c4f6de3a178042976e4188ab50f261dbee19
+    this.def = 0,
     this.villageName = "Vila Inicial",
     this.nivelLinhagem = 1,
     this.totalDoado = 0,
@@ -185,87 +149,53 @@ class HeroModel {
     this.ouroAcumuladoVila = 0,
   });
 
-  // --- TÍTULOS DINÂMICOS (PARA RANKING) ---
-
   String get nomeTituloLinhagem {
     if (raca == Raca.elfo) {
       if (nivelLinhagem >= 20) return "Deidade Élfica";
       if (nivelLinhagem >= 15) return "Santo Arcanista";
       if (nivelLinhagem >= 10) return "Guerreiro Superior";
-<<<<<<< HEAD
       if (nivelLinhagem >= 5) return "Sentinela da Floresta";
       return "Elfo Comum";
     }
     if (raca == Raca.dragoniano) {
-      if (nivelLinhagem >= 20) return "Deus Eterno";
-      if (nivelLinhagem >= 15) return "Soberano do Caos";
-      if (nivelLinhagem >= 10) return "Lorde Dragão";
-      if (nivelLinhagem >= 5) return "Drakon de Elite";
-=======
-      if (nivelLinhagem >= 5)  return "Sentinela da Floresta";
-      return "Elfo Comum";
-    } 
-    if (raca == Raca.dragoniano) {
       if (nivelLinhagem >= 20) return "Imperador Eterno";
       if (nivelLinhagem >= 15) return "Soberano do Caos";
       if (nivelLinhagem >= 10) return "Lorde Dragão";
-      if (nivelLinhagem >= 5)  return "Drakon de Elite";
->>>>>>> 45f4c4f6de3a178042976e4188ab50f261dbee19
+      if (nivelLinhagem >= 5) return "Drakon de Elite";
       return "Dragoniano Menor";
     }
     if (nivelLinhagem >= 20) return "Deus Humano";
     if (nivelLinhagem >= 15) return "Semideus da Guerra";
-<<<<<<< HEAD
     if (nivelLinhagem >= 10) return "Santo Guerreiro";
     if (nivelLinhagem >= 5) return "Herói";
     return "Humano";
   }
 
-  String tituloNobre = "Plebeu";
-  int rankNobre = 0;
-  static const List<Map<String, dynamic>> requisitosNobreza = [
-    {"titulo": "Plebeu", "minDoado": 0},
-    {"titulo": "Conde", "minDoado": 450},
-    {"titulo": "Duque", "minDoado": 1000},
-    {"titulo": "Arquiduque", "minDoado": 5000},
-    {"titulo": "Príncipe", "minDoado": 10000},
-    {"titulo": "Rei", "minDoado": 30000},
-  ];
+  String get tituloNobre {
+    if (totalDoado >= 30000) return "Rei";
+    if (totalDoado >= 10000) return "Príncipe";
+    if (totalDoado >= 5000) return "Arquiduque";
+    if (totalDoado >= 1000) return "Duque";
+    if (totalDoado >= 450) return "Conde";
+    return "Plebeu";
+  }
+
   void doar(int valor) {
     if (gold >= valor) {
       gold -= valor;
       totalDoado += valor;
     }
   }
-  // --- CÁLCULOS DE ATRIBUTOS (GETTERS) ---
-
-  int get bonusSTR {
-    if (raca == Raca.dragoniano) return 4 * (nivelLinhagem - 1);
-=======
-    if (nivelLinhagem >= 10) return "Mestre de Armas";
-    if (nivelLinhagem >= 5)  return "Guerreiro";
-    return "Plebeu";
-  }
-
-  String get tituloNobre {
-    if (totalDoado >= 10000) return "Barão";
-    if (totalDoado >= 2000) return "Cavaleiro";
-    if (totalDoado >= 500) return "Escudeiro";
-    return "Plebeu";
-  }
-
-  // --- CÁLCULOS DE ATRIBUTOS (GETTERS) ---
 
   int get bonusSTR {
     if (raca == Raca.dragoniano) return 5 * nivelLinhagem;
     if (raca == Raca.humano) return 2 * nivelLinhagem;
->>>>>>> 45f4c4f6de3a178042976e4188ab50f261dbee19
     return 0;
   }
 
   int get bonusDEF {
-<<<<<<< HEAD
-    if (raca == Raca.humano) return 3 * (nivelLinhagem - 1);
+    if (raca == Raca.elfo) return 5 * nivelLinhagem;
+    if (raca == Raca.humano) return 3 * nivelLinhagem;
     return 0;
   }
 
@@ -273,8 +203,6 @@ class HeroModel {
     if (raca == Raca.elfo) return 15 * (nivelLinhagem - 1);
     return 0;
   }
-
-  // --- CÁLCULOS DE ATRIBUTOS (GETTERS) CORRIGIDOS ---
 
   int get totalStr =>
       str +
@@ -286,35 +214,13 @@ class HeroModel {
   int get totalDef =>
       def +
       bonusDEF +
-      (equippedHelmet?.totalDef ?? 0) + // Mudado de .def para .totalDef
-      (equippedBoots?.totalDef ?? 0); // Mudado de .def para .totalDef
+      (equippedArmor?.totalDef ?? 0) +
+      (equippedHelmet?.totalDef ?? 0) +
+      (equippedBoots?.totalDef ?? 0);
 
-  int get totalMaxHp =>
-      maxHp +
-      bonusHP +
-      (equippedArmor?.totalHpBonus ?? 0) +
-      (equippedNecklace?.totalHpBonus ?? 0); // Adicionado caso colar dê HP
-=======
-    if (raca == Raca.elfo) return 5 * nivelLinhagem;
-    return 2 * nivelLinhagem;
-  }
-
-  int get totalStr => str + bonusSTR + 
-      (equippedWeapon?.totalPower ?? 0) + 
-      (equippedRing?.totalPower ?? 0) + 
-      (equippedRing2?.totalPower ?? 0);
-
-  int get totalDef => bonusDEF + 
-      (equippedArmor?.def ?? 0) + 
-      (equippedHelmet?.def ?? 0) + 
-      (equippedBoots?.def ?? 0);
-
-  int get totalMaxHp => maxHp + (equippedArmor?.hpBonus ?? 0);
->>>>>>> 45f4c4f6de3a178042976e4188ab50f261dbee19
+  int get totalMaxHp => maxHp + bonusHP + (equippedArmor?.totalHpBonus ?? 0);
 
   bool get podeAventurar => hp > 0;
-
-  // --- MÉTODOS DE PROGRESSÃO ---
 
   void gainExp(int amount) {
     exp += amount;
@@ -323,11 +229,7 @@ class HeroModel {
       exp -= nextLevelExp;
       nextLevelExp = (nextLevelExp * 1.5).toInt();
       maxHp += 10;
-<<<<<<< HEAD
       hp = totalMaxHp;
-=======
-      hp = totalMaxHp; 
->>>>>>> 45f4c4f6de3a178042976e4188ab50f261dbee19
       str += 2;
     }
     calculateStats();
@@ -342,8 +244,6 @@ class HeroModel {
     if (hp > totalMaxHp) hp = totalMaxHp;
   }
 
-  // --- ECONOMIA DA VILA ---
-
   void processarFinancas() {
     int totalPessoas = populacaoCidadaos + populacaoMendigos;
     if (totalPessoas <= 0) return;
@@ -352,87 +252,47 @@ class HeroModel {
     ouroAcumuladoVila += geracao;
   }
 
-<<<<<<< HEAD
-=======
-  void doar(int valor) {
-    if (gold >= valor) {
-      gold -= valor;
-      totalDoado += valor;
-    }
-  }
-
->>>>>>> 45f4c4f6de3a178042976e4188ab50f261dbee19
-  bool adicionarMendigo() {
-    if (populacaoMendigos < limiteMendigos) {
-      populacaoMendigos++;
-      return true;
-    }
-    return false;
-  }
-
-  // --- QUESTS E COMBATE ---
-
-  void onMonsterDefeated(String monsterName) {
-    for (var quest in activeQuests) {
-      if (quest.targetMonsterName == monsterName && !quest.isCompleted) {
-        quest.currentKillCount++;
-        if (quest.currentKillCount >= quest.requiredKillCount) {
-          quest.isCompleted = true;
-        }
-      }
-    }
-  }
-
-  void collectQuestReward(Quest quest) {
-    if (quest.isCompleted) {
-      gold += quest.rewardGold;
-      gainExp(quest.rewardExp);
-      activeQuests.remove(quest);
-    }
-  }
-
-  // --- GESTÃO DE INVENTÁRIO ---
-
   void addItem(Item newItem) {
     if (newItem.isStackable) {
-      // Busca ignorando maiúsculas/minúsculas e espaços extras
       int index = warehouse.indexWhere(
         (item) =>
             item.name.trim().toLowerCase() == newItem.name.trim().toLowerCase(),
       );
-
       if (index != -1) {
-        // DEBUG: Descomente a linha abaixo para ver no console se ele achou
-        print("Achou o item ${newItem.name}, somando ${newItem.quantity}");
         warehouse[index].quantity += newItem.quantity;
         return;
       }
     }
-<<<<<<< HEAD
-
-    // Se não achou ou não for stackable, adiciona um novo slot
-=======
->>>>>>> 45f4c4f6de3a178042976e4188ab50f261dbee19
     warehouse.add(newItem.copy());
   }
 
   void equipItem(Item item) {
-<<<<<<< HEAD
     void swap(Item? current) {
       if (current != null) addItem(current);
     }
-=======
-    void swap(Item? current) { if (current != null) addItem(current); }
->>>>>>> 45f4c4f6de3a178042976e4188ab50f261dbee19
 
     switch (item.type) {
-      case ItemType.weapon: swap(equippedWeapon); equippedWeapon = item; break;
-      case ItemType.armor: swap(equippedArmor); equippedArmor = item; break;
-      case ItemType.helmet: swap(equippedHelmet); equippedHelmet = item; break;
-      case ItemType.boots: swap(equippedBoots); equippedBoots = item; break;
-      case ItemType.necklace: swap(equippedNecklace); equippedNecklace = item; break;
+      case ItemType.weapon:
+        swap(equippedWeapon);
+        equippedWeapon = item;
+        break;
+      case ItemType.armor:
+        swap(equippedArmor);
+        equippedArmor = item;
+        break;
+      case ItemType.helmet:
+        swap(equippedHelmet);
+        equippedHelmet = item;
+        break;
+      case ItemType.boots:
+        swap(equippedBoots);
+        equippedBoots = item;
+        break;
+      case ItemType.necklace:
+        swap(equippedNecklace);
+        equippedNecklace = item;
+        break;
       case ItemType.ring:
-<<<<<<< HEAD
         if (equippedRing == null)
           equippedRing = item;
         else if (equippedRing2 == null)
@@ -444,13 +304,6 @@ class HeroModel {
         break;
       default:
         return;
-=======
-        if (equippedRing == null) equippedRing = item;
-        else if (equippedRing2 == null) equippedRing2 = item;
-        else { swap(equippedRing); equippedRing = item; }
-        break;
-      default: return;
->>>>>>> 45f4c4f6de3a178042976e4188ab50f261dbee19
     }
     warehouse.remove(item);
     calculateStats();
@@ -459,13 +312,27 @@ class HeroModel {
   void unequipItem(ItemType type, {bool isSecondSlot = false}) {
     Item? removed;
     switch (type) {
-      case ItemType.weapon: removed = equippedWeapon; equippedWeapon = null; break;
-      case ItemType.armor: removed = equippedArmor; equippedArmor = null; break;
-      case ItemType.helmet: removed = equippedHelmet; equippedHelmet = null; break;
-      case ItemType.boots: removed = equippedBoots; equippedBoots = null; break;
-      case ItemType.necklace: removed = equippedNecklace; equippedNecklace = null; break;
+      case ItemType.weapon:
+        removed = equippedWeapon;
+        equippedWeapon = null;
+        break;
+      case ItemType.armor:
+        removed = equippedArmor;
+        equippedArmor = null;
+        break;
+      case ItemType.helmet:
+        removed = equippedHelmet;
+        equippedHelmet = null;
+        break;
+      case ItemType.boots:
+        removed = equippedBoots;
+        equippedBoots = null;
+        break;
+      case ItemType.necklace:
+        removed = equippedNecklace;
+        equippedNecklace = null;
+        break;
       case ItemType.ring:
-<<<<<<< HEAD
         if (isSecondSlot) {
           removed = equippedRing2;
           equippedRing2 = null;
@@ -475,12 +342,7 @@ class HeroModel {
         }
         break;
       default:
-=======
-        if (isSecondSlot) { removed = equippedRing2; equippedRing2 = null; }
-        else { removed = equippedRing; equippedRing = null; }
->>>>>>> 45f4c4f6de3a178042976e4188ab50f261dbee19
         break;
-      default: break;
     }
     if (removed != null) {
       addItem(removed);
