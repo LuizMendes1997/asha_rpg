@@ -20,75 +20,65 @@ class WorldMap extends StatelessWidget {
 
     if (regiao == "Saida da Vila") {
       imagemFundo = "assets/images/entrada_vila.webp";
-      if (sorteio < 0.15) {
+      if (sorteio < 0.05) {
         inimigos = [MonsterData.aguiaReal];
         mensagem = "A sombra de uma lenda paira sobre você: Águia Real!";
-      } else if (sorteio < 0.45) {
-        inimigos = [MonsterData.abelha, MonsterData.abelha, MonsterData.abelha];
-        mensagem = "Um bando de abelhas cercou você!";
-      } else if (sorteio < 0.70) {
+      } else if (sorteio < 0.20) {
         inimigos = [MonsterData.cobra, MonsterData.cobra];
         mensagem = "Uma cobra venenosa bloqueia o caminho!";
-      } else if (sorteio < 0.93) {
+      } else if (sorteio < 0.55) {
+        inimigos = [MonsterData.abelha, MonsterData.abelha, MonsterData.abelha];
+        mensagem = "Um bando de abelhas cercou você!";
+      } else {
         inimigos = [MonsterData.rato];
         mensagem = "Um rato, ataque!";
       }
     } else if (regiao == "Floresta Esquecida") {
       imagemFundo = "assets/images/floresta.webp";
-      if (sorteio < 0.20) {
+      if (sorteio < 0.05) {
         inimigos = [MonsterData.rainhaAranha];
         mensagem =
             "Teias por todo lado... A Aranha de Elite desce das árvores!";
-      } else if (sorteio < 0.45) {
-        inimigos = [MonsterData.goblin, MonsterData.slime, MonsterData.goblin];
-        mensagem = "Uma emboscada! Goblins e Slimes surgem do mato!";
-      } else if (sorteio < 0.70) {
+      } else if (sorteio < 0.20) {
         inimigos = [MonsterData.lobo, MonsterData.lobo];
         mensagem = "Lobos Selvagens cercam você rosnando!";
-      } else if (sorteio < 0.93) {
+      } else if (sorteio < 0.55) {
+        inimigos = [MonsterData.goblin, MonsterData.slime, MonsterData.goblin];
+        mensagem = "Uma emboscada! Goblins e Slimes surgem do mato!";
+      } else {
         inimigos = [MonsterData.slime];
         mensagem = "Um slime na área.";
       }
     } else if (regiao == "Acampamento de Bandidos") {
       imagemFundo = "assets/images/acampamento.webp";
-      if (sorteio < 0.20) {
+      if (sorteio < 0.05) {
         inimigos = [MonsterData.liderBandido];
         mensagem = "O mais forte chegou, corraaaaa!";
-      } else if (sorteio < 0.45) {
+      } else if (sorteio < 0.20) {
         inimigos = [MonsterData.viceLider];
         mensagem = "O vice Lider te encara";
-      } else if (sorteio < 0.70) {
+      } else if (sorteio < 0.55) {
         inimigos = [MonsterData.acougueiro];
         mensagem = "Um açougueiro quer te matar!";
-      } else if (sorteio < 0.93) {
+      } else {
         inimigos = [MonsterData.assasino];
         mensagem = "Uma assasino!";
       }
     } else if (regiao == "Lagoa Encantada") {
       imagemFundo = "assets/images/lagoa.webp";
-      if (sorteio < 0.20) {
+      if (sorteio < 0.05) {
         inimigos = [MonsterData.leviata];
         mensagem = "O mais forte chegou, corraaaaa!";
-      } else if (sorteio < 0.45) {
+      } else if (sorteio < 0.20) {
         inimigos = [MonsterData.tritao];
         mensagem = "O tritao te encara";
-      } else if (sorteio < 0.70) {
+      } else if (sorteio < 0.55) {
         inimigos = [MonsterData.driade];
         mensagem = "Uma driade corrompida quer te matar!";
-      } else if (sorteio < 0.93) {
-        inimigos = [MonsterData.verme];
-        mensagem = "Um Verme!";
+      } else {
+        inimigos = [MonsterData.verme, MonsterData.verme];
+        mensagem = "Vermes!";
       }
-    }
-
-    if (inimigos.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("A área parece calma demais..."),
-          backgroundColor: Colors.blueGrey,
-        ),
-      );
-      return;
     }
 
     Navigator.push(

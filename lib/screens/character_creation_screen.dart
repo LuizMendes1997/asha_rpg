@@ -23,7 +23,7 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
       "name": "Humano",
       "type": Raca.humano, // Usando seu Enum
       "desc": "Equilíbrio absoluto. Adaptáveis a qualquer situação.",
-      "attr": {"FOR": 10, "DEF": 10, "HP": 100},
+      "attr": {"FOR": 6, "DEF": 3, "HP": 40},
       "folder": "human",
     },
     {
@@ -31,14 +31,14 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
       "type": Raca
           .dragoniano, // Verifique se no seu enum está 'dragoniano' ou 'draconiano'
       "desc": "Poder bruto e escamas resistentes. Nascidos do fogo.",
-      "attr": {"FOR": 15, "DEF": 12, "HP": 130},
+      "attr": {"FOR": 9, "DEF": 0, "HP": 40},
       "folder": "draconian",
     },
     {
       "name": "Elfo",
       "type": Raca.elfo,
       "desc": "Agilidade sobrenatural. Mestres da precisão e do tempo.",
-      "attr": {"FOR": 8, "DEF": 7, "HP": 90},
+      "attr": {"FOR": 6, "DEF": 0, "HP": 55},
       "folder": "elf",
     },
   ];
@@ -298,13 +298,14 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
       // Atribuindo os status base da raça escolhida
       str: raceData['attr']['FOR'],
       maxHp: raceData['attr']['HP'],
+      def: raceData['attr']['DEF'],
       hp: raceData['attr']['HP'], // Começa com vida cheia
       gold: 1000,
     );
 
     // Itens iniciais
     hero.addItem(ItemData.adagaVelha.copy());
-    hero.addItem(ItemData.tunicaLona.copy());
+    hero.addItem(ItemData.sandaliaVelha.copy());
     hero.gold = 1000;
 
     // Navega para o jogo e remove a tela de criação da pilha

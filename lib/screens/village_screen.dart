@@ -3,6 +3,7 @@ import '../models/game_state.dart';
 import 'recruitment_screen.dart';
 import 'finance_screen.dart';
 import 'guild_screen.dart';
+import 'LinhagemScreen.dart';
 
 class VillageScreen extends StatefulWidget {
   final HeroModel hero;
@@ -15,8 +16,7 @@ class VillageScreen extends StatefulWidget {
 }
 
 class _VillageScreenState extends State<VillageScreen> {
-  final int precoEstalagem = 15;
-
+  int get precoEstalagem => (widget.hero.maxHp / 2).toInt();
   void _descansar() {
     if (widget.hero.gold >= precoEstalagem) {
       if (widget.hero.hp >= widget.hero.totalMaxHp) {
@@ -255,12 +255,28 @@ class _VillageScreenState extends State<VillageScreen> {
                   );
                 },
               ),
-
+              _regionCard(
+                context,
+                "Templo da Ancestralidade",
+                "Evolua seu sangue e desperte novos poderes",
+                "assets/icons/linhagem.webp", // Certifique-se de ter esse ícone ou use um temporário
+                () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => LinhagemScreen(
+                        hero: widget.hero,
+                        onUpdate: widget.onUpdate,
+                      ),
+                    ),
+                  );
+                },
+              ),
               _regionCard(
                 context,
                 "Guilda",
                 "Recompensas e missões de aventureiros",
-                "assets/icons/praca.webp", // Sugestão: troque para assets/icons/guilda.webp se tiver
+                "assets/icons/guilda.webp", // Sugestão: troque para assets/icons/guilda.webp se tiver
                 () {
                   Navigator.push(
                     context,

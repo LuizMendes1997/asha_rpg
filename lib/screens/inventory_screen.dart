@@ -32,21 +32,155 @@ class _InventoryScreenState extends State<InventoryScreen> {
             ],
           ),
         ),
-        body: TabBarView(children: [_buildWarehouse(), _buildEquipped()]),
+        body: TabBarView(children: [_buildWarehouseTab(), _buildEquippedTab()]),
       ),
     );
   }
 
-  Widget _buildEquipped() {
+  // --- ABA: ARMAZÉM (Fundo inventario.webp) ---
+  Widget _buildWarehouseTab() {
+    return Stack(
+      children: [
+        _buildBackgroundImage("assets/images/inventario.webp", 0.35),
+        _buildWarehouseList(),
+      ],
+    );
+  }
+
+  // --- ABA: EQUIPADOS (Fundo inventario2.webp) ---
+  Widget _buildEquippedTab() {
+    return Stack(
+      children: [
+        _buildBackgroundImage("assets/images/inventario2.webp", 0.35),
+        _buildEquippedContent(),
+      ],
+    );
+  }
+
+  // Widget Utilitário para o Fundo
+  Widget _buildBackgroundImage(String path, double opacity) {
+    return Opacity(
+      opacity: opacity,
+      child: Image.asset(
+        path,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+      ),
+    );
+  }
+
+  Widget _buildWarehouseList() {
+    if (widget.hero.warehouse.isEmpty) {
+      return const Center(
+        child: Text(
+          "Armazém vazio...",
+          style: TextStyle(color: Colors.white24),
+        ),
+      );
+    }
+    return ListView.builder(
+      itemCount: widget.hero.warehouse.length,
+      padding: const EdgeInsets.all(10),
+      itemBuilder: (context, index) {
+        final item = widget.hero.warehouse[index];
+
+        // 1. REGRA DE EQUIPAMENTO: Apenas itens que NÃO são materiais ou poções
+        bool canEquip =
+            item.type != ItemType.material && item.type != ItemType.potion;
+
+        // 2. REGRA DE QUANTIDADE (TRAVA):
+        // Só exibe o multiplicador "xN" se o item for stackable E a quantidade for maior que 1
+        bool showQuantity = item.isStackable && item.quantity > 1;
+
+        return Card(
+          color: Colors.grey[900]?.withOpacity(0.7), // Fundo semi-transparente
+          margin: const EdgeInsets.only(bottom: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+            side: BorderSide(
+              color: canEquip ? Colors.amber.withOpacity(0.2) : Colors.white10,
+              width: 1,
+            ),
+          ),
+          child: ListTile(
+            leading: SizedBox(
+              width: 32,
+              height: 32,
+              child: Image.asset(
+                item.iconPath,
+                filterQuality: FilterQuality.none, // Mantém o Pixel Art nítido
+                fit: BoxFit.contain,
+              ),
+            ),
+            title: Row(
+              children: [
+                Text(
+                  item.displayName,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                if (showQuantity)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8.0),
+                    child: Text(
+                      "x${item.quantity}",
+                      style: const TextStyle(
+                        color: Colors.amber,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            subtitle: Text(
+              "Status: ${item.mainStat['label']} +${item.mainStat['value']} | Valor: ${item.price}g",
+              style: TextStyle(
+                color: item.mainStat['color'] ?? Colors.white70,
+                fontSize: 11,
+              ),
+            ),
+            trailing: canEquip
+                ? ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.amber[800],
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    onPressed: () {
+                      setState(() => widget.hero.equipItem(item));
+                      widget.onUpdate();
+                    },
+                    child: const Text(
+                      "Equipar",
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  )
+                : null,
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildEquippedContent() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          // --- PAINEL DE STATUS SUPERIOR ---
+          // Painel de Status
           Container(
             padding: const EdgeInsets.all(15),
             decoration: BoxDecoration(
-              color: Colors.grey[900],
+              color: Colors.grey[900]?.withOpacity(0.8),
               borderRadius: BorderRadius.circular(15),
               border: Border.all(color: Colors.amber.withOpacity(0.3)),
             ),
@@ -73,11 +207,10 @@ class _InventoryScreenState extends State<InventoryScreen> {
           ),
           const SizedBox(height: 30),
 
-          // --- GRID DE EQUIPAMENTOS (ESTRUTURA COMPACTA) ---
+          // Grid de Equipamentos
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Coluna da Esquerda
               Column(
                 children: [
                   _visualSlot(
@@ -93,8 +226,6 @@ class _InventoryScreenState extends State<InventoryScreen> {
                   ),
                 ],
               ),
-
-              // Centro: Imagem do Herói
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
@@ -110,8 +241,6 @@ class _InventoryScreenState extends State<InventoryScreen> {
                   ],
                 ),
               ),
-
-              // Coluna da Direita
               Column(
                 children: [
                   _visualSlot(
@@ -131,8 +260,6 @@ class _InventoryScreenState extends State<InventoryScreen> {
           ),
 
           const SizedBox(height: 40),
-
-          // ACESSÓRIOS (Colar e Dois Anéis)
           const Text(
             "ACESSÓRIOS",
             style: TextStyle(
@@ -142,6 +269,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
             ),
           ),
           const SizedBox(height: 10),
+
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -153,8 +281,13 @@ class _InventoryScreenState extends State<InventoryScreen> {
               const SizedBox(width: 15),
               _visualSlot("ANEL 1", widget.hero.equippedRing, ItemType.ring),
               const SizedBox(width: 15),
-              // Slot extra de Anel (Para funcionar, você deve ter 'equippedRing2' no seu HeroModel)
-              _visualSlot("ANEL 2", widget.hero.equippedRing2, ItemType.ring),
+              _visualSlot(
+                "ANEL 2",
+                widget.hero.equippedRing2,
+                ItemType.ring,
+                isAnel2:
+                    true, // Adicione uma lógica para identificar que é o slot 2
+              ),
             ],
           ),
           const SizedBox(height: 20),
@@ -167,77 +300,73 @@ class _InventoryScreenState extends State<InventoryScreen> {
     );
   }
 
-  Widget _visualSlot(String label, Item? item, ItemType type) {
+  Widget _visualSlot(
+    String label,
+    Item? item,
+    ItemType type, {
+    bool isAnel2 = false,
+  }) {
     return GestureDetector(
       onTap: item != null
           ? () {
-              setState(() {
-                widget.hero.unequipItem(type);
-              });
+              setState(() => widget.hero.unequipItem(type));
               widget.onUpdate();
             }
           : null,
-      child: Column(
+      child: Stack(
         children: [
-          Stack(
-            // Usamos Stack para sobrepor o nível ao ícone
-            children: [
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: Colors.grey[900],
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: item != null
-                        ? Colors.amber.withOpacity(0.8)
-                        : Colors.white12,
-                    width: 2,
-                  ),
-                ),
-                child: item != null
-                    ? Image.asset(
-                        item.iconPath,
-                        width: 35,
-                        filterQuality: FilterQuality.none,
-                      )
-                    : Center(
-                        child: Text(
-                          label,
-                          style: const TextStyle(
-                            color: Colors.white12,
-                            fontSize: 9,
-                          ),
-                        ),
-                      ),
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: Colors.grey[900]?.withOpacity(0.9),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: item != null
+                    ? Colors.amber.withOpacity(0.8)
+                    : Colors.white12,
+                width: 2,
               ),
-              // --- INDICADOR DE NÍVEL (+1, +2...) ---
-              if (item != null && item.level > 0)
-                Positioned(
-                  right: 2,
-                  bottom: 2,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 4,
-                      vertical: 2,
+            ),
+            child: item != null
+                ? Center(
+                    child: Image.asset(
+                      item.iconPath,
+                      width: 35,
+                      filterQuality: FilterQuality.none,
                     ),
-                    decoration: BoxDecoration(
-                      color: Colors.black,
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(color: Colors.amber, width: 0.5),
-                    ),
+                  )
+                : Center(
                     child: Text(
-                      "+${item.level}",
+                      label,
                       style: const TextStyle(
-                        color: Colors.amber,
+                        color: Colors.white12,
                         fontSize: 9,
-                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
-                ),
-            ],
           ),
+          if (item != null && item.level > 0)
+            Positioned(
+              right: 2,
+              bottom: 2,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.black,
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: Colors.amber, width: 0.5),
+                ),
+                child: Text(
+                  "+${item.level}",
+                  style: const TextStyle(
+                    color: Colors.amber,
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -259,68 +388,6 @@ class _InventoryScreenState extends State<InventoryScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildWarehouse() {
-    if (widget.hero.warehouse.isEmpty) {
-      return const Center(
-        child: Text(
-          "Armazém vazio...",
-          style: TextStyle(color: Colors.white24),
-        ),
-      );
-    }
-    return ListView.builder(
-      itemCount: widget.hero.warehouse.length,
-      padding: const EdgeInsets.all(10),
-      itemBuilder: (context, index) {
-        final item = widget.hero.warehouse[index];
-
-        // Verifica se o item é algo equipável
-        bool canEquip =
-            item.type != ItemType.material && item.type != ItemType.potion;
-
-        return Card(
-          color: Colors.grey[900],
-          margin: const EdgeInsets.only(bottom: 8),
-          child: ListTile(
-            leading: Image.asset(
-              item.iconPath,
-              width: 32,
-              filterQuality: FilterQuality.none,
-            ),
-            title: Text(
-              item.displayName,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            subtitle: Text(
-              "Valor: ${item.price}g | ${item.type.name.toUpperCase()}",
-              style: const TextStyle(color: Colors.white54, fontSize: 11),
-            ),
-            trailing: canEquip
-                ? ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.amber[800],
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        widget.hero.equipItem(item);
-                      });
-                      widget.onUpdate();
-                    },
-                    child: const Text(
-                      "Equipar",
-                      style: TextStyle(color: Colors.black, fontSize: 11),
-                    ),
-                  )
-                : null,
-          ),
-        );
-      },
     );
   }
 }

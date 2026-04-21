@@ -32,6 +32,7 @@ class _BlacksmithScreenState extends State<BlacksmithScreen> {
     setState(() {
       widget.hero.gold -= custo;
       double chance = 1.0;
+
       if (item.level >= 2) {
         chance = (1.0 - ((item.level - 1) * 0.1)).clamp(0.1, 1.0);
       }
@@ -42,7 +43,9 @@ class _BlacksmithScreenState extends State<BlacksmithScreen> {
         item.level += 1;
         _showSuccessSnippet("🔥 SUCESSO! ${item.displayName} forjado!");
       } else {
-        if (item.level > 0) item.level -= 1;
+        if (item.level > 0) {
+          item.level -= 1;
+        }
         _showErrorSnippet(
           "⚡ FALHA! O metal trincou... (Regrediu para +${item.level})",
         );
@@ -78,37 +81,7 @@ class _BlacksmithScreenState extends State<BlacksmithScreen> {
       ),
       body: Column(
         children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  const Color(0xFF2C0B00),
-                  Colors.black.withOpacity(0.8),
-                ],
-              ),
-            ),
-            child: Column(
-              children: [
-                Image.asset(
-                  'assets/icons/anvil.webp',
-                  height: 70,
-                  filterQuality: FilterQuality.none,
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  "\"O aço nunca mente.\"",
-                  style: TextStyle(
-                    fontStyle: FontStyle.italic,
-                    color: Colors.orangeAccent,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          _buildHeader(),
           Expanded(
             child: upgradeableItems.isEmpty
                 ? _buildEmptyState()
@@ -124,19 +97,49 @@ class _BlacksmithScreenState extends State<BlacksmithScreen> {
     );
   }
 
+  Widget _buildHeader() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [const Color(0xFF2C0B00), Colors.black.withOpacity(0.8)],
+        ),
+      ),
+      child: Column(
+        children: [
+          Image.asset(
+            'assets/icons/anvil.webp',
+            height: 70,
+            filterQuality: FilterQuality.none,
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            "\"O aço nunca mente.\"",
+            style: TextStyle(
+              fontStyle: FontStyle.italic,
+              color: Colors.orangeAccent,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildUpgradeCard(Item item) {
     int custo = (item.level + 1) * 50;
     double chance = item.level < 2
         ? 1.0
         : (1.0 - ((item.level - 1) * 0.1)).clamp(0.1, 1.0);
-    Color chanceColor = chance > 0.7
-        ? Colors.green
-        : (chance > 0.4 ? Colors.orange : Colors.red);
+
+    // Pegando dados dinâmicos do Item (ATK, DEF ou HP)
+    final stat = item.mainStat;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        // --- DEGRADÊ DE BRASA ADICIONADO ---
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -149,35 +152,16 @@ class _BlacksmithScreenState extends State<BlacksmithScreen> {
               : Colors.white10,
           width: 1,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.4),
-            blurRadius: 6,
-            offset: const Offset(0, 3),
-          ),
-        ],
       ),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.black26,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Image.asset(
-                item.iconPath,
-                width: 40,
-                filterQuality: FilterQuality.none,
-              ),
-            ),
+            _buildItemIcon(item),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     item.displayName,
@@ -186,71 +170,79 @@ class _BlacksmithScreenState extends State<BlacksmithScreen> {
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
                     ),
-                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
                       _statusMiniLabel(
-                        "ATUAL",
-                        "${item.totalPower}",
-                        Colors.white70,
+                        stat["label"],
+                        "${stat["value"]}",
+                        stat["color"],
                       ),
-                      const Icon(
-                        Icons.arrow_forward,
-                        size: 10,
-                        color: Colors.white24,
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 4),
+                        child: Icon(
+                          Icons.arrow_forward,
+                          size: 10,
+                          color: Colors.white24,
+                        ),
                       ),
-                      const SizedBox(width: 4),
-                      _statusMiniLabel(
-                        "PRÓX",
-                        "${item.totalPower + 2}",
-                        Colors.greenAccent,
+                      Text(
+                        "${stat["next"]}",
+                        style: const TextStyle(
+                          color: Colors.greenAccent,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 2),
                   _statusMiniLabel(
                     "CHANCE",
                     "${(chance * 100).toInt()}%",
-                    chanceColor,
+                    _getChanceColor(chance),
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 8),
-            SizedBox(
-              width: 80,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF8B0000),
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                onPressed: () => _upgradeItem(item),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Image.asset(
-                      'assets/icons/hammer.webp',
-                      width: 18,
-                      height: 18,
-                      filterQuality: FilterQuality.none,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      "${custo}g",
-                      style: const TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            _buildForgeButton(item, custo),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildItemIcon(Item item) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.black26,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Image.asset(
+        item.iconPath,
+        width: 40,
+        filterQuality: FilterQuality.none,
+      ),
+    );
+  }
+
+  Widget _buildForgeButton(Item item, int custo) {
+    return SizedBox(
+      width: 80,
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF8B0000),
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+        onPressed: () => _upgradeItem(item),
+        child: Column(
+          children: [
+            const Icon(Icons.build, size: 18, color: Colors.white),
+            Text(
+              "${custo}g",
+              style: const TextStyle(fontSize: 10, color: Colors.white),
             ),
           ],
         ),
@@ -258,7 +250,16 @@ class _BlacksmithScreenState extends State<BlacksmithScreen> {
     );
   }
 
-  // Função auxiliar de texto para evitar repetição e erros
+  Color _getChanceColor(double chance) {
+    if (chance > 0.7) {
+      return Colors.green;
+    } else if (chance > 0.4) {
+      return Colors.orange;
+    } else {
+      return Colors.red;
+    }
+  }
+
   Widget _statusMiniLabel(String label, String value, Color color) {
     return Text(
       "$label: $value",
@@ -282,6 +283,7 @@ class _BlacksmithScreenState extends State<BlacksmithScreen> {
         (i) => i.type != ItemType.material && i.type != ItemType.potion,
       ),
     );
+
     final equipped = [
       widget.hero.equippedWeapon,
       widget.hero.equippedArmor,
@@ -291,8 +293,11 @@ class _BlacksmithScreenState extends State<BlacksmithScreen> {
       widget.hero.equippedRing,
       widget.hero.equippedRing2,
     ];
+
     for (var item in equipped) {
-      if (item != null) list.add(item);
+      if (item != null) {
+        list.add(item);
+      }
     }
     return list;
   }

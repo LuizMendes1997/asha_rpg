@@ -57,7 +57,14 @@ class ItemData {
     isStackable: true,
     iconPath: 'assets/icons/caudaRato.webp',
   );
-
+  static Item fragmentosDivinos = Item(
+    name: "Fragmentos Divinos",
+    type: ItemType.material,
+    price: 0,
+    isStackable: true,
+    iconPath: 'assets/icons/fragmentosDivinos.webp',
+    quantity: 1,
+  );
   static Item penaDourada = Item(
     name: "Pena Dourada",
     type: ItemType.material,
@@ -70,8 +77,9 @@ class ItemData {
   static Item capuzPano = Item(
     name: "Capuz de Pano",
     type: ItemType.helmet,
-    def: 2,
+    def: 1,
     price: 20,
+    isStackable: false,
     iconPath: 'assets/icons/capuz_pano.webp',
   );
 
@@ -80,6 +88,7 @@ class ItemData {
     type: ItemType.armor,
     hpBonus: 10,
     price: 30,
+    isStackable: false,
     iconPath: 'assets/icons/tunica_lona.webp',
   );
 
@@ -88,6 +97,7 @@ class ItemData {
     type: ItemType.boots,
     def: 1,
     price: 10,
+    isStackable: false,
     iconPath: 'assets/icons/sandalia_velha.webp',
   );
 
@@ -95,24 +105,27 @@ class ItemData {
   static Item elmoCouro = Item(
     name: "Elmo de Couro",
     type: ItemType.helmet,
-    def: 5,
-    price: 100,
+    def: 7,
+    price: 60,
+    isStackable: false,
     iconPath: 'assets/icons/elmo_couro.webp',
   );
 
   static Item peitoralCouro = Item(
     name: "Peitoral de Couro",
     type: ItemType.armor,
-    hpBonus: 30,
-    price: 150,
+    hpBonus: 25,
+    price: 70,
+    isStackable: false,
     iconPath: 'assets/icons/peitoral_couro.webp',
   );
 
   static Item botaMontaria = Item(
     name: "Bota de Montaria",
     type: ItemType.boots,
-    def: 3,
+    def: 5,
     price: 60,
+    isStackable: false,
     iconPath: 'assets/icons/bota_montaria.webp',
   );
 
@@ -120,24 +133,27 @@ class ItemData {
   static Item elmoVigia = Item(
     name: "Elmo do Vigia",
     type: ItemType.helmet,
-    def: 12,
-    price: 400,
+    def: 15,
+    price: 150,
+    isStackable: false,
     iconPath: 'assets/icons/elmo_vigia.webp',
   );
 
   static Item cotaDestemido = Item(
     name: "Cota do Destemido",
     type: ItemType.armor,
-    hpBonus: 80,
-    price: 550,
+    hpBonus: 40,
+    price: 140,
+    isStackable: false,
     iconPath: 'assets/icons/cota_destemido.webp',
   );
 
   static Item botasBronze = Item(
     name: "Botas de Bronze",
     type: ItemType.boots,
-    def: 8,
-    price: 300,
+    def: 12,
+    price: 100,
+    isStackable: false,
     iconPath: 'assets/icons/botas_bronze.webp',
   );
 
@@ -145,24 +161,27 @@ class ItemData {
   static Item gritoAlvorecer = Item(
     name: "Grito do Alvorecer",
     type: ItemType.helmet,
-    def: 25,
-    price: 1200,
+    def: 45,
+    price: 200,
+    isStackable: false,
     iconPath: 'assets/icons/grito_alvorecer.webp',
   );
 
   static Item placaPaladino = Item(
     name: "Placa de Paladino",
     type: ItemType.armor,
-    hpBonus: 200,
-    price: 1800,
+    hpBonus: 100,
+    price: 250,
+    isStackable: false,
     iconPath: 'assets/icons/placa_paladino.webp',
   );
 
   static Item passoTrovao = Item(
     name: "Passo de Trovão",
     type: ItemType.boots,
-    def: 18,
-    price: 950,
+    def: 30,
+    price: 180,
+    isStackable: false,
     iconPath: 'assets/icons/passo_trovao.webp',
   );
 
@@ -171,7 +190,8 @@ class ItemData {
     name: "Coroa do Infinito",
     type: ItemType.helmet,
     def: 60,
-    price: 5000,
+    price: 200,
+    isStackable: false,
     iconPath: 'assets/icons/coroa_infinito.webp',
   );
 
@@ -179,7 +199,8 @@ class ItemData {
     name: "Manto da Eternidade",
     type: ItemType.armor,
     hpBonus: 500,
-    price: 7500,
+    price: 100,
+    isStackable: false,
     iconPath: 'assets/icons/manto_eternidade.webp',
   );
 
@@ -187,7 +208,8 @@ class ItemData {
     name: "Rastro Estelar",
     type: ItemType.boots,
     def: 45,
-    price: 3800,
+    price: 100,
+    isStackable: false,
     iconPath: 'assets/icons/rastro_estelar.webp',
   );
 
@@ -199,5 +221,41 @@ class ItemData {
     price: 15,
     isStackable: false,
     iconPath: 'assets/icons/adaga_velha.webp',
+  );
+
+  static Item espadacomum = Item(
+    name: "Espada Comum",
+    type: ItemType.weapon,
+    power: 12,
+    price: 45,
+    isStackable: false,
+    iconPath: 'assets/icons/espadacomum.webp',
+  );
+
+  static Item laminaPrata = Item(
+    name: "Lâmina de Prata Refinada",
+    type: ItemType.weapon,
+    power: 22,
+    price: 120,
+    isStackable: false,
+    iconPath: 'assets/icons/laminaprata.webp',
+  );
+
+  static Item armadoVendaval = Item(
+    name: "Espada do Vendaval",
+    type: ItemType.weapon,
+    power: 35,
+    price: 150,
+    isStackable: false,
+    iconPath: 'assets/icons/espadadovendaval.webp',
+  );
+
+  static Item devoradoraSois = Item(
+    name: "Devoradora de Sóis",
+    type: ItemType.weapon,
+    power: 80,
+    price: 300,
+    isStackable: false,
+    iconPath: 'assets/icons/devoradoradesois.webp',
   );
 }
