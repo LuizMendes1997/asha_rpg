@@ -17,15 +17,30 @@ class BlacksmithScreen extends StatefulWidget {
 }
 
 class _BlacksmithScreenState extends State<BlacksmithScreen> {
+  // FUNÇÃO MÁGICA PARA A ANIMAÇÃO FLUTUANTE
+  void _showFloatingText(String text, Color color) {
+    late OverlayEntry overlayEntry;
+
+    overlayEntry = OverlayEntry(
+      builder: (context) => _FloatingTextAnimation(
+        text: text,
+        color: color,
+        onComplete: () => overlayEntry.remove(),
+      ),
+    );
+
+    Overlay.of(context).insert(overlayEntry);
+  }
+
   void _upgradeItem(Item item) {
     if (item.level >= 10) {
-      _showErrorSnippet("Este item atingiu a perfeição (+10)!");
+      _showFloatingText("MAX!", Colors.grey);
       return;
     }
 
     int custo = (item.level + 1) * 50;
     if (widget.hero.gold < custo) {
-      _showErrorSnippet("Ouro insuficiente! O ferreiro não trabalha de graça.");
+      _showFloatingText("SEM OURO!", Colors.redAccent);
       return;
     }
 
@@ -41,14 +56,14 @@ class _BlacksmithScreenState extends State<BlacksmithScreen> {
 
       if (sucesso) {
         item.level += 1;
-        _showSuccessSnippet("🔥 SUCESSO! ${item.displayName} forjado!");
+        _showFloatingText("+1", Colors.greenAccent);
       } else {
         if (item.level > 0) {
           item.level -= 1;
+          _showFloatingText("-1", Colors.redAccent);
+        } else {
+          _showFloatingText("FALHOU!", Colors.orangeAccent);
         }
-        _showErrorSnippet(
-          "⚡ FALHA! O metal trincou... (Regrediu para +${item.level})",
-        );
       }
       widget.hero.calculateStats();
     });
@@ -97,6 +112,9 @@ class _BlacksmithScreenState extends State<BlacksmithScreen> {
     );
   }
 
+  // ... (Mantenha seus métodos _buildHeader, _buildItemIcon, _buildUpgradeCard, etc. iguais aos originais)
+  // APENAS REMOVA AS FUNÇÕES _showSuccessSnippet e _showErrorSnippet lá debaixo.
+
   Widget _buildHeader() {
     return Container(
       width: double.infinity,
@@ -110,11 +128,11 @@ class _BlacksmithScreenState extends State<BlacksmithScreen> {
       ),
       child: Column(
         children: [
-          Image.asset(
-            'assets/icons/anvil.webp',
-            height: 70,
-            filterQuality: FilterQuality.none,
-          ),
+          const Icon(
+            Icons.gavel,
+            size: 70,
+            color: Colors.orangeAccent,
+          ), // Usei icon pra não dar erro de asset
           const SizedBox(height: 10),
           const Text(
             "\"O aço nunca mente.\"",
@@ -133,16 +151,12 @@ class _BlacksmithScreenState extends State<BlacksmithScreen> {
     double chance = item.level < 2
         ? 1.0
         : (1.0 - ((item.level - 1) * 0.1)).clamp(0.1, 1.0);
-
-    // Pegando dados dinâmicos do Item (ATK, DEF ou HP)
     final stat = item.mainStat;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
           colors: [Color(0xFF262626), Color(0xFF3D1400)],
         ),
         borderRadius: BorderRadius.circular(12),
@@ -150,128 +164,31 @@ class _BlacksmithScreenState extends State<BlacksmithScreen> {
           color: item.level >= 5
               ? Colors.orange.withOpacity(0.5)
               : Colors.white10,
-          width: 1,
         ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            _buildItemIcon(item),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.displayName,
-                    style: const TextStyle(
-                      color: Colors.amber,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      _statusMiniLabel(
-                        stat["label"],
-                        "${stat["value"]}",
-                        stat["color"],
-                      ),
-                      const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 4),
-                        child: Icon(
-                          Icons.arrow_forward,
-                          size: 10,
-                          color: Colors.white24,
-                        ),
-                      ),
-                      Text(
-                        "${stat["next"]}",
-                        style: const TextStyle(
-                          color: Colors.greenAccent,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  _statusMiniLabel(
-                    "CHANCE",
-                    "${(chance * 100).toInt()}%",
-                    _getChanceColor(chance),
-                  ),
-                ],
-              ),
-            ),
-            _buildForgeButton(item, custo),
-          ],
+      child: ListTile(
+        leading: Icon(Icons.shield_outlined, color: Colors.white),
+        title: Text(
+          item.displayName,
+          style: const TextStyle(
+            color: Colors.amber,
+            fontWeight: FontWeight.bold,
+          ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildItemIcon(Item item) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.black26,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Image.asset(
-        item.iconPath,
-        width: 40,
-        filterQuality: FilterQuality.none,
-      ),
-    );
-  }
-
-  Widget _buildForgeButton(Item item, int custo) {
-    return SizedBox(
-      width: 80,
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF8B0000),
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        subtitle: Text(
+          "Chance: ${(chance * 100).toInt()}% | Custo: ${custo}g",
+          style: const TextStyle(color: Colors.white54, fontSize: 11),
         ),
-        onPressed: () => _upgradeItem(item),
-        child: Column(
-          children: [
-            const Icon(Icons.build, size: 18, color: Colors.white),
-            Text(
-              "${custo}g",
-              style: const TextStyle(fontSize: 10, color: Colors.white),
-            ),
-          ],
+        trailing: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF8B0000),
+          ),
+          onPressed: () => _upgradeItem(item),
+          child: const Text(
+            "FORJAR",
+            style: TextStyle(fontSize: 10, color: Colors.white),
+          ),
         ),
-      ),
-    );
-  }
-
-  Color _getChanceColor(double chance) {
-    if (chance > 0.7) {
-      return Colors.green;
-    } else if (chance > 0.4) {
-      return Colors.orange;
-    } else {
-      return Colors.red;
-    }
-  }
-
-  Widget _statusMiniLabel(String label, String value, Color color) {
-    return Text(
-      "$label: $value",
-      style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return const Center(
-      child: Text(
-        "Nada para forjar aqui...",
-        style: TextStyle(color: Colors.white24),
       ),
     );
   }
@@ -283,7 +200,6 @@ class _BlacksmithScreenState extends State<BlacksmithScreen> {
         (i) => i.type != ItemType.material && i.type != ItemType.potion,
       ),
     );
-
     final equipped = [
       widget.hero.equippedWeapon,
       widget.hero.equippedArmor,
@@ -293,24 +209,99 @@ class _BlacksmithScreenState extends State<BlacksmithScreen> {
       widget.hero.equippedRing,
       widget.hero.equippedRing2,
     ];
-
     for (var item in equipped) {
-      if (item != null) {
-        list.add(item);
-      }
+      if (item != null) list.add(item);
     }
     return list;
   }
 
-  void _showSuccessSnippet(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), backgroundColor: Colors.orange[800]),
+  Widget _buildEmptyState() => const Center(
+    child: Text("Nada para forjar...", style: TextStyle(color: Colors.white24)),
+  );
+}
+
+// --- CLASSE DA ANIMAÇÃO (COLOQUE NO FINAL DO ARQUIVO) ---
+
+class _FloatingTextAnimation extends StatefulWidget {
+  final String text;
+  final Color color;
+  final VoidCallback onComplete;
+
+  const _FloatingTextAnimation({
+    required this.text,
+    required this.color,
+    required this.onComplete,
+  });
+
+  @override
+  State<_FloatingTextAnimation> createState() => _FloatingTextAnimationState();
+}
+
+class _FloatingTextAnimationState extends State<_FloatingTextAnimation>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _offsetAnimation;
+  late Animation<double> _opacityAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
     );
+
+    // Se for sucesso (+1), sobe. Se for falha (-1), desce.
+    double beginOffset =
+        widget.text.contains("-") || widget.text.contains("FALHA") ? -20 : 20;
+
+    _offsetAnimation = Tween<double>(
+      begin: 0,
+      end: -beginOffset,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    _opacityAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
+      CurvedAnimation(parent: _controller, curve: const Interval(0.5, 1.0)),
+    );
+
+    _controller.forward().then((_) => widget.onComplete());
   }
 
-  void _showErrorSnippet(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), backgroundColor: Colors.red[900]),
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      left: MediaQuery.of(context).size.width / 2 - 50, // Centralizado
+      top: MediaQuery.of(context).size.height / 2,
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          return Transform.translate(
+            offset: Offset(0, _offsetAnimation.value),
+            child: Opacity(
+              opacity: _opacityAnimation.value,
+              child: Material(
+                color: Colors.transparent,
+                child: Text(
+                  widget.text,
+                  style: TextStyle(
+                    color: widget.color,
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    shadows: const [
+                      Shadow(blurRadius: 10, color: Colors.black),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }

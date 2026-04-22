@@ -1,13 +1,13 @@
 class Quest {
   final String title;
   final String description;
-  final String targetMonsterName; // Qual bicho precisa matar
-  final int requiredKillCount; // Quantos precisa matar
-  int currentKillCount; // Quantos já matou
+  final String targetMonsterName;
+  final int requiredKillCount;
+  int currentKillCount;
   final int rewardGold;
   final int rewardExp;
   bool isCompleted;
-  bool isTaken; // Se o jogador já aceitou a missão
+  bool isTaken;
 
   Quest({
     required this.title,
@@ -20,4 +20,19 @@ class Quest {
     this.isCompleted = false,
     this.isTaken = false,
   });
+
+  // ADICIONE ISSO AQUI:
+  Quest copy() {
+    return Quest(
+      title: title,
+      description: description,
+      targetMonsterName: targetMonsterName,
+      requiredKillCount: requiredKillCount,
+      rewardGold: rewardGold,
+      rewardExp: rewardExp,
+      currentKillCount: 0, // Começa do zero
+      isCompleted: false, // Nova cópia não está pronta
+      isTaken: true, // Já foi aceita
+    );
+  }
 }

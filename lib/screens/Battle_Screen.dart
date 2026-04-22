@@ -136,19 +136,44 @@ class _BattleScreenState extends State<BattleScreen> {
     List<Item> allLoot = [];
     int totalExp = 0;
     int totalGold = 0;
+    List<String> questProgressMessages = [];
 
+    // O loop começa aqui: vamos processar cada inimigo morto
     for (var m in widget.enemies) {
       allLoot.addAll(LootTable.getDrops(m.name));
       totalExp += m.expValue;
       totalGold += 5; // Gold base por monstro
+
+      // LÓGICA DE MISSÃO: Agora o 'm' existe aqui dentro!
+      for (var quest in widget.hero.activeQuests) {
+        if (!quest.isCompleted &&
+            m.name.toLowerCase().contains(
+              quest.targetMonsterName.toLowerCase(),
+            )) {
+          if (quest.currentKillCount < quest.requiredKillCount) {
+            quest.currentKillCount++;
+
+            // Guarda a mensagem para mostrar no diálogo depois
+            String msg =
+                "${quest.title}: ${quest.currentKillCount}/${quest.requiredKillCount}";
+            if (!questProgressMessages.contains(msg)) {
+              questProgressMessages.add(msg);
+            }
+
+            debugPrint("Quest Progresso: $msg");
+          }
+        }
+      }
     }
 
+    // Aplica os ganhos ao herói
     widget.hero.gainExp(totalExp);
     widget.hero.gold += totalGold;
     for (var item in allLoot) {
       widget.hero.addItem(item);
     }
 
+    // Mostra o resultado da batalha
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -170,12 +195,38 @@ class _BattleScreenState extends State<BattleScreen> {
               "💰 Gold: +$totalGold",
               style: const TextStyle(color: Colors.amber),
             ),
+
+            // --- SEÇÃO DE MISSÃO NO DIÁLOGO ---
+            if (questProgressMessages.isNotEmpty) ...[
+              const SizedBox(height: 15),
+              const Text(
+                "📜 MISSÕES:",
+                style: TextStyle(
+                  color: Colors.orangeAccent,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 5),
+              ...questProgressMessages.map(
+                (msg) => Text(
+                  msg,
+                  style: const TextStyle(
+                    color: Colors.blueAccent,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
+
+            // ----------------------------------
             if (allLoot.isNotEmpty) ...[
-              const SizedBox(height: 10),
+              const SizedBox(height: 15),
               const Text(
                 "🎒 ITENS ENCONTRADOS:",
                 style: TextStyle(color: Colors.white, fontSize: 10),
               ),
+              const SizedBox(height: 5),
               Wrap(
                 spacing: 5,
                 children: allLoot
@@ -188,8 +239,8 @@ class _BattleScreenState extends State<BattleScreen> {
         actions: [
           ElevatedButton(
             onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
+              Navigator.pop(context); // Fecha o dialog
+              Navigator.pop(context); // Sai da batalha
               widget.onUpdate();
             },
             child: const Text("SAIR"),

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../models/game_state.dart';
-import '../data/item_data.dart';
 
 class LinhagemScreen extends StatefulWidget {
   final HeroModel hero;

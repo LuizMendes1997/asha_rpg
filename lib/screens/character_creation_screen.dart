@@ -13,7 +13,6 @@ class CharacterCreationScreen extends StatefulWidget {
 
 class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
   final TextEditingController _charNameController = TextEditingController();
-  final TextEditingController _villageNameController = TextEditingController();
 
   bool isMale = true;
   int selectedRaceIndex = 0;
@@ -78,8 +77,6 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
               ),
               const SizedBox(height: 30),
               _buildInput("NOME DO HERÓI", _charNameController, Icons.shield),
-              const SizedBox(height: 15),
-              _buildInput("NOME DA VILA", _villageNameController, Icons.fort),
               const SizedBox(height: 40),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -293,7 +290,6 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
     // Criando o herói com os dados selecionados
     final hero = HeroModel(
       name: _charNameController.text,
-      villageName: _villageNameController.text, // Passando o nome da vila
       raca: raceData['type'],
       // Atribuindo os status base da raça escolhida
       str: raceData['attr']['FOR'],

@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import '../models/game_state.dart';
-import 'recruitment_screen.dart';
-import 'finance_screen.dart';
 import 'guild_screen.dart';
 import 'LinhagemScreen.dart';
 
@@ -128,7 +126,7 @@ class _VillageScreenState extends State<VillageScreen> {
                       const SizedBox(width: 12),
                       Flexible(
                         child: Text(
-                          widget.hero.villageName.toUpperCase(),
+                          "Village",
                           textAlign: TextAlign.center,
                           style: const TextStyle(
                             color: Colors.white,
@@ -220,41 +218,6 @@ class _VillageScreenState extends State<VillageScreen> {
               const SizedBox(height: 8),
 
               // --- DEMAIS REGIÕES ---
-              _regionCard(
-                context,
-                "Escritório de Finanças",
-                "Gerencie impostos e alimentos",
-                "assets/icons/financas.webp",
-                () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (c) => FinanceScreen(
-                        hero: widget.hero,
-                        onUpdate: widget.onUpdate,
-                      ),
-                    ),
-                  );
-                },
-              ),
-
-              _regionCard(
-                context,
-                "Praça da Vila",
-                "Convide pessoas para morar aqui",
-                "assets/icons/praca.webp",
-                () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => RecruitmentScreen(
-                        hero: widget.hero,
-                        onUpdate: widget.onUpdate,
-                      ),
-                    ),
-                  );
-                },
-              ),
               _regionCard(
                 context,
                 "Templo da Ancestralidade",

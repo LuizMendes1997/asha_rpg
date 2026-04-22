@@ -30,9 +30,9 @@ class Item {
     this.hpBonus = 0,
   });
 
-  int get totalDef => def + (level * 2);
-  int get totalHpBonus => hpBonus + (level * 5);
-  int get totalPower => power + (level * 2);
+  int get totalDef => def + ((level - 1) * 2);
+  int get totalHpBonus => hpBonus + ((level - 1) * 5);
+  int get totalPower => power + ((level - 1) * 2);
   String get displayName => level > 0 ? "$name +$level" : name;
 
   Map<String, dynamic> get mainStat {
@@ -110,14 +110,8 @@ class HeroModel {
   int gold;
   int str;
   int def;
-  String villageName;
   int nivelLinhagem;
   int totalDoado;
-  int populacaoCidadaos;
-  int populacaoMendigos;
-  int limiteMendigos;
-  int ouroAcumuladoVila;
-  final double producaoPorHabitante = 0.5;
 
   List<Item> warehouse = [];
   Item? equippedWeapon;
@@ -130,7 +124,7 @@ class HeroModel {
   List<Quest> activeQuests = [];
 
   HeroModel({
-    this.name = "Mendigo",
+    this.name = "Guerreiro",
     this.raca = Raca.humano,
     this.level = 1,
     this.exp = 0,
@@ -140,13 +134,8 @@ class HeroModel {
     this.gold = 0,
     this.str = 10,
     this.def = 0,
-    this.villageName = "Vila Inicial",
     this.nivelLinhagem = 1,
     this.totalDoado = 0,
-    this.populacaoCidadaos = 0,
-    this.populacaoMendigos = 0,
-    this.limiteMendigos = 3,
-    this.ouroAcumuladoVila = 0,
   });
 
   String get nomeTituloLinhagem {
@@ -228,9 +217,9 @@ class HeroModel {
       level++;
       exp -= nextLevelExp;
       nextLevelExp = (nextLevelExp * 1.5).toInt();
-      maxHp += 10;
+      maxHp += 15; // Aumentei o ganho de HP já que não tem população
       hp = totalMaxHp;
-      str += 2;
+      str += 3; // Aumentei o ganho de STR para compensar
     }
     calculateStats();
   }
@@ -242,14 +231,6 @@ class HeroModel {
 
   void calculateStats() {
     if (hp > totalMaxHp) hp = totalMaxHp;
-  }
-
-  void processarFinancas() {
-    int totalPessoas = populacaoCidadaos + populacaoMendigos;
-    if (totalPessoas <= 0) return;
-    int geracao = (totalPessoas * producaoPorHabitante).toInt();
-    if (geracao <= 0) geracao = 1;
-    ouroAcumuladoVila += geracao;
   }
 
   void addItem(Item newItem) {

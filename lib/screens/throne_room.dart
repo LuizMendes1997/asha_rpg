@@ -19,23 +19,22 @@ class _ThroneRoomState extends State<ThroneRoom> {
     if (valor != null && valor > 0 && widget.hero.gold >= valor) {
       setState(() {
         widget.hero.doar(valor);
+        // Ao doar, o limite de mendigos sobe baseado no novo título
         _tributeController.clear();
       });
       widget.onUpdate();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("O Imperador aceitou sua oferta!")),
+        SnackBar(
+          content: Text(
+            "O Imperador agora te vê como um ${widget.hero.tituloNobre}!",
+          ),
+        ),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final proximoRankIdx = widget.hero.rankNobre + 1;
-    final temProximo = proximoRankIdx < HeroModel.requisitosNobreza.length;
-    final requisitos = temProximo
-        ? HeroModel.requisitosNobreza[proximoRankIdx]
-        : null;
-
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -43,7 +42,6 @@ class _ThroneRoomState extends State<ThroneRoom> {
         backgroundColor: Colors.purple[900],
       ),
       body: SingleChildScrollView(
-        // Para não quebrar com o teclado
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
@@ -53,23 +51,20 @@ class _ThroneRoomState extends State<ThroneRoom> {
               color: Colors.purpleAccent,
             ),
             Text(
-              "Título: ${widget.hero.tituloNobre}",
+              widget.hero.tituloNobre,
               style: const TextStyle(
-                fontSize: 22,
+                fontSize: 28,
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
               ),
             ),
             Text(
-              "Total Doado: ${widget.hero.totalDoado}g",
-              style: const TextStyle(color: Colors.amber),
+              "Total Oferecido: ${widget.hero.totalDoado}g",
+              style: const TextStyle(color: Colors.amber, fontSize: 16),
             ),
-
             const Divider(color: Colors.white24, height: 40),
-
-            // PARTE DE DOAR TRIBUTO
             const Text(
-              "ENTREGAR TRIBUTO AO IMPERADOR",
+              "QUANTO DESEJA OFERECER AO IMPERADOR?",
               style: TextStyle(color: Colors.white70, fontSize: 12),
             ),
             const SizedBox(height: 10),
@@ -85,47 +80,57 @@ class _ThroneRoomState extends State<ThroneRoom> {
                 border: OutlineInputBorder(),
               ),
             ),
-            const SizedBox(height: 10),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.amber[900],
-              ),
-              onPressed: _oferecerTributo,
-              child: const Text(
-                "OFERECER OURO",
-                style: TextStyle(color: Colors.black),
+            const SizedBox(height: 15),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.amber[900],
+                ),
+                onPressed: _oferecerTributo,
+                child: const Text(
+                  "OFERECER TRIBUTO",
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ),
-
-            const Divider(color: Colors.white24, height: 40),
-
-            // PARTE DE ASCENSÃO
-            if (temProximo) ...[
-              Text(
-                "Próximo Nível: ${requisitos!['titulo']}",
-                style: const TextStyle(color: Colors.white),
-              ),
-              Text(
-                "Necessário ter doado: ${requisitos['minDoado']}g",
-                style: const TextStyle(color: Colors.white54),
-              ),
-              const SizedBox(height: 15),
-              ElevatedButton(
-                onPressed: widget.hero.totalDoado >= requisitos['minDoado']
-                    ? () {
-                        setState(() {
-                          widget.hero.rankNobre++;
-                          widget.hero.tituloNobre = requisitos['titulo'];
-                        });
-                        widget.onUpdate();
-                      }
-                    : null,
-                child: const Text("PEDIR ASCENSÃO DE RANK"),
-              ),
-            ],
+            const SizedBox(height: 30),
+            _infoRank("Próximo Nível", _getProximoRankInfo()),
           ],
         ),
       ),
+    );
+  }
+
+  String _getProximoRankInfo() {
+    if (widget.hero.totalDoado < 450) return "Conde (450g)";
+    if (widget.hero.totalDoado < 1000) return "Duque (1000g)";
+    if (widget.hero.totalDoado < 5000) return "Arquiduque (5000g)";
+    if (widget.hero.totalDoado < 10000) return "Príncipe (10000g)";
+    if (widget.hero.totalDoado < 30000) return "Rei (30000g)";
+    return "Nível Máximo Atingido";
+  }
+
+  Widget _infoRank(String label, String value) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: const TextStyle(color: Colors.white54, fontSize: 12),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
     );
   }
 }
