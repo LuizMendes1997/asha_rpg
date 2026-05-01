@@ -12,48 +12,43 @@ class LinhagemScreen extends StatefulWidget {
 }
 
 class _LinhagemScreenState extends State<LinhagemScreen> {
-  // Custo de evolução: Nível 1->2 (1000), 2->3 (2000), etc.
   int get custoEvolucao => widget.hero.nivelLinhagem * 2;
   int get custoFragmentos => widget.hero.nivelLinhagem * 3;
   int get usuariogold => widget.hero.gold;
+
   int get fragmentosAtuais {
     return widget.hero.warehouse
         .where((item) => item.name == "Fragmentos Divinos")
         .fold(0, (soma, item) => soma + item.quantity);
   }
 
+  // Lógica para as 5 estrelas: 1 a 5, resetando a cada patamar
+  int get estrelasProgresso {
+    int progresso = widget.hero.nivelLinhagem % 5;
+    return (progresso == 0 && widget.hero.nivelLinhagem > 0) ? 5 : progresso;
+  }
+
   void _tentarEvoluir() {
     if (widget.hero.gold >= custoEvolucao &&
         fragmentosAtuais >= custoFragmentos) {
       setState(() {
-        // 1. Paga o ouro
         widget.hero.gold -= custoEvolucao;
-
-        // 2. Tira os fragmentos da warehouse (FORMA SEGURA)
         int removidos = 0;
 
         for (int i = widget.hero.warehouse.length - 1; i >= 0; i--) {
           var item = widget.hero.warehouse[i];
-
           if (item.name == "Fragmentos Divinos") {
             int faltaRemover = custoFragmentos - removidos;
-
             if (item.quantity <= faltaRemover) {
-              // O slot atual tem menos ou o exato que precisamos: remove o slot todo
               removidos += item.quantity;
               widget.hero.warehouse.removeAt(i);
             } else {
-              // O slot tem MAIS do que precisamos: apenas subtrai a quantidade
               item.quantity -= faltaRemover;
               removidos += faltaRemover;
             }
           }
-
-          // Se já atingiu o custo, para o loop
           if (removidos >= custoFragmentos) break;
         }
-
-        // 3. Evolui o nível
         widget.hero.evoluirLinhagem();
       });
 
@@ -69,7 +64,6 @@ class _LinhagemScreenState extends State<LinhagemScreen> {
         ),
       );
     } else {
-      // Dica: Ajustei a mensagem para mostrar o que falta
       String msg = widget.hero.gold < custoEvolucao
           ? "Ouro insuficiente."
           : "Fragmentos insuficientes.";
@@ -81,7 +75,6 @@ class _LinhagemScreenState extends State<LinhagemScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Configurações visuais baseadas na raça
     Color racaColor;
     IconData racaIcon;
 
@@ -94,12 +87,11 @@ class _LinhagemScreenState extends State<LinhagemScreen> {
         racaColor = Colors.cyanAccent;
         racaIcon = Icons.auto_awesome;
         break;
-      default: // Humano
+      default:
         racaColor = Colors.redAccent;
         racaIcon = Icons.shield_moon_rounded;
     }
 
-    // Cor especial para patamares lendários (Santo/Deus)
     Color tituloColor = widget.hero.nivelLinhagem >= 15
         ? Colors.amber
         : racaColor;
@@ -113,7 +105,6 @@ class _LinhagemScreenState extends State<LinhagemScreen> {
       ),
       body: Stack(
         children: [
-          // Fundo de Imagem (Background do Templo)
           Container(
             width: double.infinity,
             height: double.infinity,
@@ -125,19 +116,15 @@ class _LinhagemScreenState extends State<LinhagemScreen> {
               ),
             ),
           ),
-
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Column(
               children: [
                 const SizedBox(height: 40),
-
-                // Representação Visual da Linhagem
                 Center(
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
-                      // Brilho de fundo
                       Container(
                         width: 140,
                         height: 140,
@@ -152,7 +139,6 @@ class _LinhagemScreenState extends State<LinhagemScreen> {
                           ],
                         ),
                       ),
-                      // Ícone Central
                       Container(
                         padding: const EdgeInsets.all(25),
                         decoration: BoxDecoration(
@@ -165,10 +151,25 @@ class _LinhagemScreenState extends State<LinhagemScreen> {
                     ],
                   ),
                 ),
+                const SizedBox(height: 25),
 
-                const SizedBox(height: 30),
+                // SISTEMA DE ESTRELAS (1 a 5)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(5, (index) {
+                    bool ativa = index < estrelasProgresso;
+                    return Icon(
+                      ativa ? Icons.star_rounded : Icons.star_outline_rounded,
+                      color: ativa ? tituloColor : Colors.white10,
+                      size: 32,
+                      shadows: ativa
+                          ? [Shadow(color: tituloColor, blurRadius: 10)]
+                          : null,
+                    );
+                  }),
+                ),
 
-                // Nomes e Títulos
+                const SizedBox(height: 15),
                 Text(
                   widget.hero.nomeTituloLinhagem.toUpperCase(),
                   textAlign: TextAlign.center,
@@ -185,9 +186,7 @@ class _LinhagemScreenState extends State<LinhagemScreen> {
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 5),
-
                 Text(
                   "Nível de Linhagem: ${widget.hero.nivelLinhagem}",
                   style: const TextStyle(
@@ -196,10 +195,7 @@ class _LinhagemScreenState extends State<LinhagemScreen> {
                     letterSpacing: 1.5,
                   ),
                 ),
-
-                const SizedBox(height: 40),
-
-                // Painel de Atributos
+                const SizedBox(height: 30),
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
@@ -232,10 +228,7 @@ class _LinhagemScreenState extends State<LinhagemScreen> {
                     ],
                   ),
                 ),
-
                 const Spacer(),
-
-                // Botão de Evolução
                 Container(
                   width: double.infinity,
                   height: 85,
@@ -276,8 +269,7 @@ class _LinhagemScreenState extends State<LinhagemScreen> {
                             ),
                             const SizedBox(width: 5),
                             Column(
-                              crossAxisAlignment: CrossAxisAlignment
-                                  .start, // Alinha os textos à esquerda
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   "Fragmentos: $fragmentosAtuais / $custoFragmentos",
@@ -288,9 +280,6 @@ class _LinhagemScreenState extends State<LinhagemScreen> {
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                const SizedBox(
-                                  height: 4,
-                                ), // Pequeno espaço entre os dois textos
                                 Text(
                                   "Ouro: $usuariogold / $custoEvolucao",
                                   style: TextStyle(

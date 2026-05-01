@@ -3,6 +3,8 @@ import 'dart:math';
 import '../models/game_state.dart';
 import '../data/monster_data.dart';
 import 'Battle_Screen.dart';
+import 'DemonCastleScreen.dart';
+import 'magic_tower_screen.dart';
 
 class WorldMap extends StatelessWidget {
   final HeroModel hero;
@@ -139,7 +141,7 @@ class WorldMap extends StatelessWidget {
               context,
               "Saida da Vila",
               "Campos abertos e perigos menores.",
-              "assets/icons/mapamundo/vila.webp", // Caminho da sua imagem
+              "assets/icons/mapamundo/vila.webp",
               Colors.white,
               () => _explorar(context, "Saida da Vila"),
             ),
@@ -148,7 +150,7 @@ class WorldMap extends StatelessWidget {
               context,
               "Floresta Esquecida",
               "Árvores densas e feras selvagens.",
-              "assets/icons/mapamundo/floresta.webp", // Caminho da sua imagem
+              "assets/icons/mapamundo/floresta.webp",
               Colors.greenAccent,
               () => _explorar(context, "Floresta Esquecida"),
             ),
@@ -157,7 +159,7 @@ class WorldMap extends StatelessWidget {
               context,
               "Acampamento de Bandidos",
               "Nível Recomendado: 5 | Risco de Morte",
-              "assets/icons/mapamundo/acampamento.webp", // Caminho da sua imagem
+              "assets/icons/mapamundo/acampamento.webp",
               Colors.orangeAccent,
               () => _explorar(context, "Acampamento de Bandidos"),
             ),
@@ -166,9 +168,90 @@ class WorldMap extends StatelessWidget {
               context,
               "Lagoa Encantada",
               "Bloqueado: Requer Nível 15",
-              "assets/icons/mapamundo/lagoa.webp", // Caminho da sua imagem
+              "assets/icons/mapamundo/lagoa.webp",
               Colors.lightBlueAccent,
               () => _explorar(context, "Lagoa Encantada"),
+            ),
+            _regionCard(
+              context,
+              "Torre Mágica",
+              "Suba andares infinitos por ouro.",
+              "assets/icons/mapamundo/torre.webp", // Crie esta imagem
+              Colors.cyanAccent,
+              () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        MagicTowerScreen(hero: hero, onUpdate: onUpdate),
+                  ),
+                );
+              },
+            ),
+            // CARD DO CASTELO
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                _regionCard(
+                  context,
+                  "Castelo do Rei Demônio",
+                  hero.level >= 1
+                      ? "Desafio Diário: 7 Batalhas"
+                      : "Bloqueado: Requer Nível 5",
+                  "assets/icons/mapamundo/castelo_icone.webp", // Caminho atualizado
+                  hero.level >= 1 ? Colors.redAccent : Colors.grey,
+                  () {
+                    if (hero.level >= 1) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => DemonCastleScreen(
+                            hero: hero,
+                            onUpdate: onUpdate, // USA O ONUPDATE DO CONSTRUTOR
+                          ),
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Nível insuficiente!"),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  },
+                  isEvent: true,
+                ),
+                Positioned(
+                  top: -10,
+                  right: 10,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.white, width: 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.5),
+                          blurRadius: 4,
+                        ),
+                      ],
+                    ),
+                    child: const Text(
+                      "EVENTO",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -180,10 +263,11 @@ class WorldMap extends StatelessWidget {
     BuildContext context,
     String title,
     String subtitle,
-    String imagePath, // Agora recebe o caminho da imagem
+    String imagePath,
     Color borderColor,
-    VoidCallback onTap,
-  ) {
+    VoidCallback onTap, {
+    bool isEvent = false,
+  }) {
     return Card(
       color: Colors.black.withOpacity(0.7),
       elevation: 8,
@@ -194,17 +278,15 @@ class WorldMap extends StatelessWidget {
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        // Substituído o Icon por Image.asset
         leading: ClipRRect(
           borderRadius: BorderRadius.circular(8),
           child: Image.asset(
             imagePath,
-            width: 50, // Tamanho ideal ajustado no widget
+            width: 50,
             height: 50,
             fit: BoxFit.cover,
-            // Fallback caso a imagem não carregue
             errorBuilder: (context, error, stackTrace) =>
-                const Icon(Icons.broken_image, color: Colors.red, size: 50),
+                const Icon(Icons.castle, color: Colors.red, size: 50),
           ),
         ),
         title: Text(
