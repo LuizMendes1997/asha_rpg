@@ -53,7 +53,7 @@ class _LinhagemScreenState extends State<LinhagemScreen> {
       });
 
       widget.onUpdate();
-
+      widget.hero.saveToSupabase();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(

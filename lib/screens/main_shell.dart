@@ -4,6 +4,7 @@ import 'village_screen.dart';
 import 'world_map.dart';
 import 'empire_screen.dart';
 import 'inventory_screen.dart';
+import 'ranking_screen.dart'; // Certifique-se de importar a tela que criamos
 
 class MainShell extends StatefulWidget {
   final HeroModel hero;
@@ -20,11 +21,13 @@ class _MainShellState extends State<MainShell> {
 
   @override
   Widget build(BuildContext context) {
+    // 1. Adicionada a RankingScreen na lista de telas
     final List<Widget> _screens = [
       VillageScreen(hero: widget.hero, onUpdate: _refresh),
       WorldMap(hero: widget.hero, onUpdate: _refresh),
       InventoryScreen(hero: widget.hero, onUpdate: _refresh),
       EmpireScreen(hero: widget.hero, onUpdate: _refresh),
+      const RankingScreen(), // Nova tela de Ranking
     ];
 
     return Scaffold(
@@ -32,7 +35,7 @@ class _MainShellState extends State<MainShell> {
       body: SafeArea(
         child: Column(
           children: [
-            // --- NOVO HUD ESTILIZADO EM CARD ---
+            // --- HUD ESTILIZADO (Mantido igual) ---
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
               child: Container(
@@ -54,7 +57,6 @@ class _MainShellState extends State<MainShell> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        // Badge do Level
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8,
@@ -76,7 +78,6 @@ class _MainShellState extends State<MainShell> {
                             ),
                           ),
                         ),
-                        // Badge do Ouro
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8,
@@ -108,7 +109,6 @@ class _MainShellState extends State<MainShell> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    // Barras de Status
                     _buildStatBar(
                       "HP: ${widget.hero.hp}/${widget.hero.totalMaxHp}",
                       widget.hero.hp / widget.hero.totalMaxHp,
@@ -141,6 +141,7 @@ class _MainShellState extends State<MainShell> {
         unselectedItemColor: Colors.white60,
         currentIndex: _selectedIndex,
         onTap: (index) {
+          // Bloqueio de HP baixo apenas para o Mapa (index 1)
           if (index == 1 && widget.hero.hp <= 0) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -160,10 +161,18 @@ class _MainShellState extends State<MainShell> {
           itemMenu('assets/icons/mundo.webp', 'Mundo'),
           itemMenu('assets/icons/bolsa.webp', 'Bolsa'),
           itemMenu('assets/icons/imperio.webp', 'Império'),
+          // 2. Novo Item no Menu de Navegação
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.emoji_events_outlined, size: 26),
+            activeIcon: Icon(Icons.emoji_events, size: 28, color: Colors.amber),
+            label: 'Ranking',
+          ),
         ],
       ),
     );
   }
+
+  // ... (Seus métodos _buildStatBar e itemMenu permanecem os mesmos abaixo)
 
   Widget _buildStatBar(
     String label,
@@ -192,19 +201,8 @@ class _MainShellState extends State<MainShell> {
                 child: Container(
                   height: 14,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [c1, c2],
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                    ),
+                    gradient: LinearGradient(colors: [c1, c2]),
                     borderRadius: BorderRadius.circular(7),
-                    boxShadow: [
-                      BoxShadow(
-                        color: c1.withOpacity(0.3),
-                        blurRadius: 4,
-                        spreadRadius: 1,
-                      ),
-                    ],
                   ),
                 ),
               ),
@@ -216,7 +214,6 @@ class _MainShellState extends State<MainShell> {
                       fontSize: 9,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
-                      shadows: [Shadow(blurRadius: 2, color: Colors.black)],
                     ),
                   ),
                 ),

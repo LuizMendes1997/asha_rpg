@@ -1,5 +1,6 @@
-import 'quest_model.dart';
 import 'package:flutter/material.dart';
+import 'quest_model.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 enum Raca { humano, elfo, dragoniano }
 
@@ -29,6 +30,36 @@ class Item {
     this.def = 0,
     this.hpBonus = 0,
   });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'type': type.index,
+      'power': power,
+      'price': price,
+      'iconPath': iconPath,
+      'quantity': quantity,
+      'isStackable': isStackable,
+      'level': level,
+      'def': def,
+      'hpBonus': hpBonus,
+    };
+  }
+
+  factory Item.fromMap(Map<String, dynamic> map) {
+    return Item(
+      name: map['name'],
+      type: ItemType.values[map['type']],
+      iconPath: map['iconPath'],
+      power: map['power'] ?? 0,
+      price: map['price'] ?? 0,
+      quantity: map['quantity'] ?? 1,
+      isStackable: map['isStackable'] ?? true,
+      level: map['level'] ?? 0,
+      def: map['def'] ?? 0,
+      hpBonus: map['hpBonus'] ?? 0,
+    );
+  }
 
   int get totalDef => def + ((level - 1) * 2);
   int get totalHpBonus => hpBonus + ((level - 1) * 5);
@@ -100,6 +131,7 @@ class Monster {
 }
 
 class HeroModel {
+  String? id;
   String name;
   Raca raca;
   int level;
@@ -113,6 +145,11 @@ class HeroModel {
   int nivelLinhagem;
   int totalDoado;
 
+  // --- NOVAS VARIÁVEIS DE PROGRESSO ---
+  int maxTowerFloor;
+  int questProgress;
+  String? currentQuestId;
+
   List<Item> warehouse = [];
   Item? equippedWeapon;
   Item? equippedArmor;
@@ -124,6 +161,7 @@ class HeroModel {
   List<Quest> activeQuests = [];
 
   HeroModel({
+    this.id,
     this.name = "Guerreiro",
     this.raca = Raca.humano,
     this.level = 1,
@@ -136,7 +174,100 @@ class HeroModel {
     this.def = 0,
     this.nivelLinhagem = 1,
     this.totalDoado = 0,
+    // Inicialização dos novos campos
+    this.maxTowerFloor = 0,
+    this.questProgress = 0,
+    this.currentQuestId,
   });
+
+  // --- SERIALIZAÇÃO PARA O SUPABASE ---
+  Map<String, dynamic> toMap() {
+    return {
+      'username': name,
+      'race': raca.index,
+      'level': level,
+      'exp': exp,
+      'next_level_exp': nextLevelExp,
+      'hp': hp,
+      'max_hp': maxHp,
+      'gold': gold,
+      'str': str,
+      'def': def,
+      'nivel_linhagem': nivelLinhagem,
+      'total_doado': totalDoado,
+      // Inclusão no mapa de salvamento
+      'max_tower_floor': maxTowerFloor,
+      'quest_progress': questProgress,
+      'current_quest_id': currentQuestId,
+      'warehouse': warehouse.map((i) => i.toMap()).toList(),
+      'equipped_weapon': equippedWeapon?.toMap(),
+      'equipped_armor': equippedArmor?.toMap(),
+      'equipped_helmet': equippedHelmet?.toMap(),
+      'equipped_boots': equippedBoots?.toMap(),
+      'equipped_necklace': equippedNecklace?.toMap(),
+      'equipped_ring': equippedRing?.toMap(),
+      'equipped_ring2': equippedRing2?.toMap(),
+    };
+  }
+
+  factory HeroModel.fromMap(String userId, Map<String, dynamic> map) {
+    var hero = HeroModel(
+      id: userId,
+      name: map['username'] ?? 'Guerreiro',
+      raca: Raca.values[map['race'] ?? 0],
+      level: map['level'] ?? 1,
+      exp: map['exp'] ?? 0,
+      nextLevelExp: map['next_level_exp'] ?? 100,
+      hp: map['hp'] ?? 100,
+      maxHp: map['max_hp'] ?? 100,
+      gold: map['gold'] ?? 0,
+      str: map['str'] ?? 10,
+      def: map['def'] ?? 0,
+      nivelLinhagem: map['nivel_linhagem'] ?? 1,
+      totalDoado: map['total_doado'] ?? 0,
+      // Carregando do banco
+      maxTowerFloor: map['max_tower_floor'] ?? 0,
+      questProgress: map['quest_progress'] ?? 0,
+      currentQuestId: map['current_quest_id'],
+    );
+
+    if (map['warehouse'] != null) {
+      hero.warehouse = (map['warehouse'] as List)
+          .map((i) => Item.fromMap(i))
+          .toList();
+    }
+    if (map['equipped_weapon'] != null)
+      hero.equippedWeapon = Item.fromMap(map['equipped_weapon']);
+    if (map['equipped_armor'] != null)
+      hero.equippedArmor = Item.fromMap(map['equipped_armor']);
+    if (map['equipped_helmet'] != null)
+      hero.equippedHelmet = Item.fromMap(map['equipped_helmet']);
+    if (map['equipped_boots'] != null)
+      hero.equippedBoots = Item.fromMap(map['equipped_boots']);
+    if (map['equipped_necklace'] != null)
+      hero.equippedNecklace = Item.fromMap(map['equipped_necklace']);
+    if (map['equipped_ring'] != null)
+      hero.equippedRing = Item.fromMap(map['equipped_ring']);
+    if (map['equipped_ring2'] != null)
+      hero.equippedRing2 = Item.fromMap(map['equipped_ring2']);
+
+    return hero;
+  }
+
+  Future<void> saveToSupabase() async {
+    if (id == null) return;
+    try {
+      await Supabase.instance.client
+          .from('profiles')
+          .update(this.toMap())
+          .eq('id', id!);
+      debugPrint("Dados salvos com sucesso.");
+    } catch (e) {
+      debugPrint("Erro ao salvar dados: $e");
+    }
+  }
+
+  // --- LÓGICA DO JOGO (GETTERS RESTAURADOS) ---
 
   String get nomeTituloLinhagem {
     if (raca == Raca.elfo) {
@@ -173,6 +304,7 @@ class HeroModel {
     if (gold >= valor) {
       gold -= valor;
       totalDoado += valor;
+      saveToSupabase();
     }
   }
 
@@ -199,14 +331,12 @@ class HeroModel {
       (equippedWeapon?.totalPower ?? 0) +
       (equippedRing?.totalPower ?? 0) +
       (equippedRing2?.totalPower ?? 0);
-
   int get totalDef =>
       def +
       bonusDEF +
       (equippedArmor?.totalDef ?? 0) +
       (equippedHelmet?.totalDef ?? 0) +
       (equippedBoots?.totalDef ?? 0);
-
   int get totalMaxHp => maxHp + bonusHP + (equippedArmor?.totalHpBonus ?? 0);
 
   bool get podeAventurar => hp > 0;
@@ -217,16 +347,18 @@ class HeroModel {
       level++;
       exp -= nextLevelExp;
       nextLevelExp = (nextLevelExp * 1.5).toInt();
-      maxHp += 15; // Aumentei o ganho de HP já que não tem população
+      maxHp += 15;
       hp = totalMaxHp;
-      str += 3; // Aumentei o ganho de STR para compensar
+      str += 3;
     }
     calculateStats();
+    saveToSupabase();
   }
 
   void evoluirLinhagem() {
     nivelLinhagem++;
     calculateStats();
+    saveToSupabase();
   }
 
   void calculateStats() {
@@ -288,6 +420,7 @@ class HeroModel {
     }
     warehouse.remove(item);
     calculateStats();
+    saveToSupabase();
   }
 
   void unequipItem(ItemType type, {bool isSecondSlot = false}) {
@@ -328,6 +461,7 @@ class HeroModel {
     if (removed != null) {
       addItem(removed);
       calculateStats();
+      saveToSupabase();
     }
   }
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../models/game_state.dart'; // Ajuste o caminho se necessário
-import '../data/item_data.dart'; // Para dar os itens iniciais
-import 'main_shell.dart'; // Para onde vamos navegar
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../models/game_state.dart';
+import 'main_shell.dart';
 
 class CharacterCreationScreen extends StatefulWidget {
   const CharacterCreationScreen({super.key});
@@ -13,39 +13,127 @@ class CharacterCreationScreen extends StatefulWidget {
 
 class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
   final TextEditingController _charNameController = TextEditingController();
-
   bool isMale = true;
   int selectedRaceIndex = 0;
+  bool _isLoading = false;
 
   final List<Map<String, dynamic>> races = [
     {
       "name": "Humano",
-      "type": Raca.humano, // Usando seu Enum
-      "desc": "Equilíbrio absoluto. Adaptáveis a qualquer situação.",
-      "attr": {"FOR": 6, "DEF": 3, "HP": 40},
+      "type": Raca.humano,
+      "desc": "Equilíbrio absoluto entre força e defesa.",
+      "attr": {"FOR": 6, "DEF": 3, "HP": 100},
       "folder": "human",
     },
     {
       "name": "Draconiano",
-      "type": Raca
-          .dragoniano, // Verifique se no seu enum está 'dragoniano' ou 'draconiano'
-      "desc": "Poder bruto e escamas resistentes. Nascidos do fogo.",
-      "attr": {"FOR": 9, "DEF": 0, "HP": 40},
+      "type": Raca.dragoniano,
+      "desc": "Poder bruto e escamas resistentes.",
+      "attr": {"FOR": 10, "DEF": 5, "HP": 120},
       "folder": "draconian",
     },
     {
       "name": "Elfo",
       "type": Raca.elfo,
-      "desc": "Agilidade sobrenatural. Mestres da precisão e do tempo.",
-      "attr": {"FOR": 6, "DEF": 0, "HP": 55},
+      "desc": "Agilidade e alta vitalidade arcana.",
+      "attr": {"FOR": 5, "DEF": 2, "HP": 150},
       "folder": "elf",
     },
   ];
 
   String get currentImagePath {
-    String raceFolder = races[selectedRaceIndex]['folder'];
-    String genderSuffix = isMale ? "_m.webp" : "_f.webp";
-    return "assets/races/$raceFolder$genderSuffix";
+    String folder = races[selectedRaceIndex]['folder'];
+    return "assets/races/$folder${isMale ? "_m.webp" : "_f.webp"}";
+  }
+
+  // Widget para mostrar as barrinhas/valores de atributos
+  Widget _buildAttributeRow(String label, String value, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            "$label: ",
+            style: const TextStyle(
+              color: Colors.grey,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _finish() async {
+    final String name = _charNameController.text.trim();
+    if (name.isEmpty || name.length < 3) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("O nome deve ter pelo menos 3 caracteres!"),
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    final supabase = Supabase.instance.client;
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+
+    final raceData = races[selectedRaceIndex];
+    final hero = HeroModel(
+      id: user.id,
+      name: name,
+      raca: raceData['type'],
+      str: raceData['attr']['FOR'],
+      def: raceData['attr']['DEF'],
+      maxHp: raceData['attr']['HP'],
+      hp: raceData['attr']['HP'],
+      gold: 500,
+    );
+
+    try {
+      await supabase.from('profiles').insert({
+        'id': user.id,
+        'username': hero.name,
+        'race': hero.raca.index,
+        'level': 1,
+        'exp': 0,
+        'hp': hero.hp,
+        'max_hp': hero.maxHp,
+        'str': hero.str,
+        'def': hero.def,
+        'gold': hero.gold,
+        'nivel_linhagem': 1,
+        'total_doado': 0,
+        'warehouse': [],
+        'max_tower_floor': 0,
+        'current_quest_id': null,
+        'quest_progress': 0,
+      });
+
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => MainShell(hero: hero)),
+        );
+      }
+    } catch (e) {
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Erro: $e"), backgroundColor: Colors.red),
+        );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -53,17 +141,18 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
     var race = races[selectedRaceIndex];
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D0D),
+      backgroundColor: Colors.black,
       body: Container(
+        height: double.infinity,
         decoration: BoxDecoration(
           gradient: RadialGradient(
             center: Alignment.center,
-            radius: 1.2,
-            colors: [const Color(0xFF2C0B00).withOpacity(0.3), Colors.black],
+            radius: 1.5,
+            colors: [Colors.grey.shade900, Colors.black],
           ),
         ),
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 60),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 50),
           child: Column(
             children: [
               const Text(
@@ -72,57 +161,56 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
                   color: Colors.amber,
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
-                  letterSpacing: 4,
+                  letterSpacing: 3,
                 ),
               ),
               const SizedBox(height: 30),
-              _buildInput("NOME DO HERÓI", _charNameController, Icons.shield),
-              const SizedBox(height: 40),
+              TextField(
+                controller: _charNameController,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  labelText: "NOME DO PERSONAGEM",
+                  labelStyle: TextStyle(color: Colors.amber[700]),
+                  enabledBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.amber),
+                  ),
+                  focusedBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.white, width: 2),
+                  ),
+                  prefixIcon: const Icon(Icons.shield, color: Colors.amber),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // SELETOR DE RAÇA (Corrigido para evitar overflow)
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _navArrow(Icons.arrow_back_ios, () {
+                  _navButton(Icons.arrow_back_ios, () {
                     setState(
                       () => selectedRaceIndex =
                           (selectedRaceIndex - 1 + races.length) % races.length,
                     );
                   }),
-                  Column(
-                    children: [
-                      Container(
-                        height: 220,
-                        width: 180,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.05),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: Colors.amber.withOpacity(0.2),
-                          ),
+                  Expanded(
+                    child: Container(
+                      height: 250,
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: Colors.amber.withOpacity(0.3),
                         ),
-                        child: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 250),
-                          child: Image.asset(
-                            currentImagePath,
-                            key: ValueKey(currentImagePath),
-                            width: double.infinity,
-                            fit: BoxFit.contain,
-                            filterQuality: FilterQuality.none,
-                          ),
+                        borderRadius: BorderRadius.circular(20),
+                        color: Colors.black26,
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Image.asset(
+                          currentImagePath,
+                          fit: BoxFit.contain,
                         ),
                       ),
-                      const SizedBox(height: 15),
-                      Text(
-                        race['name'].toUpperCase(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 2,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                  _navArrow(Icons.arrow_forward_ios, () {
+                  _navButton(Icons.arrow_forward_ios, () {
                     setState(
                       () => selectedRaceIndex =
                           (selectedRaceIndex + 1) % races.length,
@@ -130,71 +218,91 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
                   }),
                 ],
               ),
-              const SizedBox(height: 25),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _genderBtn("MASC", true),
-                  const SizedBox(width: 15),
-                  _genderBtn("FEMI", false),
-                ],
+
+              const SizedBox(height: 15),
+              Text(
+                race['name'].toUpperCase(),
+                style: const TextStyle(
+                  fontSize: 24,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-              const SizedBox(height: 35),
+
+              // ATRIBUTOS (Recolocados)
               Container(
-                padding: const EdgeInsets.all(20),
+                margin: const EdgeInsets.symmetric(vertical: 15),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.grey[900]?.withOpacity(0.5),
-                  borderRadius: BorderRadius.circular(15),
-                  border: Border.all(color: Colors.white10),
+                  color: Colors.white.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.amber.withOpacity(0.2)),
                 ),
                 child: Column(
                   children: [
-                    Text(
-                      race['desc'],
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontStyle: FontStyle.italic,
-                        fontSize: 13,
-                      ),
+                    _buildAttributeRow(
+                      "FORÇA",
+                      "${race['attr']['FOR']}",
+                      Colors.redAccent,
                     ),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 10),
-                      child: Divider(color: Colors.white10),
-                    ),
-                    _statusRow("FORÇA", race['attr']['FOR'], Colors.redAccent),
-                    _statusRow(
+                    _buildAttributeRow(
                       "DEFESA",
-                      race['attr']['DEF'],
+                      "${race['attr']['DEF']}",
                       Colors.blueAccent,
                     ),
-                    _statusRow(
-                      "HP BASE",
-                      race['attr']['HP'],
+                    _buildAttributeRow(
+                      "VITALIDADE",
+                      "${race['attr']['HP']} HP",
                       Colors.greenAccent,
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 40),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.amber[900],
-                  minimumSize: const Size(double.infinity, 55),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                onPressed: _finish,
-                child: const Text(
-                  "INICIAR AVENTURA",
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
+
+              Text(
+                race['desc'],
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.grey, fontSize: 13),
               ),
+
+              const SizedBox(height: 25),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _genderTile(
+                    "MASC",
+                    isMale,
+                    () => setState(() => isMale = true),
+                  ),
+                  const SizedBox(width: 15),
+                  _genderTile(
+                    "FEMI",
+                    !isMale,
+                    () => setState(() => isMale = false),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 35),
+              _isLoading
+                  ? const CircularProgressIndicator(color: Colors.amber)
+                  : SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.amber.shade900,
+                          padding: const EdgeInsets.symmetric(vertical: 18),
+                        ),
+                        onPressed: _finish,
+                        child: const Text(
+                          "INICIAR JORNADA",
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
             ],
           ),
         ),
@@ -202,111 +310,32 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
     );
   }
 
-  Widget _buildInput(
-    String label,
-    TextEditingController controller,
-    IconData icon,
-  ) {
-    return TextField(
-      controller: controller,
-      style: const TextStyle(color: Colors.white),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(color: Colors.white38, fontSize: 12),
-        prefixIcon: Icon(icon, color: Colors.amber, size: 20),
-        filled: true,
-        fillColor: Colors.white.withOpacity(0.05),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide.none,
-        ),
-      ),
-    );
-  }
-
-  Widget _navArrow(IconData icon, VoidCallback tap) {
+  Widget _navButton(IconData icon, VoidCallback onTap) {
     return IconButton(
-      icon: Icon(icon, color: Colors.amber, size: 30),
-      onPressed: tap,
+      icon: Icon(icon, color: Colors.amber, size: 35),
+      onPressed: onTap,
     );
   }
 
-  Widget _genderBtn(String label, bool value) {
-    bool isSelected = isMale == value;
+  Widget _genderTile(String title, bool active, VoidCallback onTap) {
     return GestureDetector(
-      onTap: () => setState(() => isMale = value),
+      onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.amber : Colors.transparent,
+          color: active ? Colors.amber : Colors.transparent,
           border: Border.all(color: Colors.amber),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text(
-          label,
+          title,
           style: TextStyle(
-            color: isSelected ? Colors.black : Colors.amber,
+            color: active ? Colors.black : Colors.amber,
             fontWeight: FontWeight.bold,
           ),
         ),
       ),
-    );
-  }
-
-  Widget _statusRow(String label, int val, Color col) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(color: Colors.white54, fontSize: 11),
-          ),
-          Text(
-            "+$val",
-            style: TextStyle(
-              color: col,
-              fontWeight: FontWeight.bold,
-              fontSize: 15,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _finish() {
-    if (_charNameController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("O herói precisa de um nome!")),
-      );
-      return;
-    }
-
-    final raceData = races[selectedRaceIndex];
-
-    // Criando o herói com os dados selecionados
-    final hero = HeroModel(
-      name: _charNameController.text,
-      raca: raceData['type'],
-      // Atribuindo os status base da raça escolhida
-      str: raceData['attr']['FOR'],
-      maxHp: raceData['attr']['HP'],
-      def: raceData['attr']['DEF'],
-      hp: raceData['attr']['HP'], // Começa com vida cheia
-      gold: 1000,
-    );
-
-    // Itens iniciais
-    hero.addItem(ItemData.adagaVelha.copy());
-    hero.addItem(ItemData.sandaliaVelha.copy());
-    hero.gold = 1000;
-
-    // Navega para o jogo e remove a tela de criação da pilha
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => MainShell(hero: hero)),
     );
   }
 }

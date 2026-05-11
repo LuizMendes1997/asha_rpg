@@ -172,7 +172,7 @@ class _BattleScreenState extends State<BattleScreen> {
     for (var item in allLoot) {
       widget.hero.addItem(item);
     }
-
+    widget.hero.saveToSupabase();
     // Mostra o resultado da batalha
     showDialog(
       context: context,

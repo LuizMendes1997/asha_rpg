@@ -68,6 +68,7 @@ class _BlacksmithScreenState extends State<BlacksmithScreen> {
       widget.hero.calculateStats();
     });
     widget.onUpdate();
+    widget.hero.saveToSupabase();
   }
 
   @override

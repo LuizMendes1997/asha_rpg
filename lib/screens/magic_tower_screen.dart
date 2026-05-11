@@ -18,9 +18,9 @@ class MagicTowerScreen extends StatefulWidget {
 }
 
 class _MagicTowerScreenState extends State<MagicTowerScreen> {
-  int currentFloor = 1;
+  late int currentFloor;
   int totalGoldEarned = 0;
-  String battleLog = "Você entrou no 1º Andar da Torre Mágica...";
+  String battleLog = "";
 
   late List<int> enemiesHP;
   late List<Monster> currentEnemies;
@@ -29,20 +29,22 @@ class _MagicTowerScreenState extends State<MagicTowerScreen> {
   @override
   void initState() {
     super.initState();
+    // CARREGA O PROGRESSO: Começa no próximo andar após o recorde atual
+    currentFloor = widget.hero.maxTowerFloor + 1;
+    battleLog = "Você entrou no $currentFloorº Andar da Torre Mágica...";
     _spawnFloorMonster();
   }
 
   void _spawnFloorMonster() {
-    // A cada andar, o bicho fica 10% mais forte que o anterior
+    // Escalonamento de dificuldade: +10 HP e +2 ATK por andar
     Monster monstro = Monster(
       name: "Guardião da Torre F$currentFloor",
       hp: 30 + (currentFloor * 10),
       atk: 5 + (currentFloor * 2),
       def: 2 + (currentFloor),
       expValue: 10 + currentFloor,
-      imagePath:
-          'assets/monsters/fantasma.webp', // Use um fantasma ou bicho místico
-      isBoss: currentFloor % 5 == 0, // A cada 5 andares é um boss
+      imagePath: 'assets/monsters/fantasma.webp',
+      isBoss: currentFloor % 5 == 0,
     );
 
     setState(() {
@@ -54,7 +56,7 @@ class _MagicTowerScreenState extends State<MagicTowerScreen> {
 
   void _processTurn() {
     setState(() {
-      // Ataque do Herói
+      // 1. Ataque do Herói
       int damageToMonster = widget.hero.totalStr - currentEnemies[0].def;
       if (damageToMonster < 1) damageToMonster = 1;
 
@@ -68,18 +70,20 @@ class _MagicTowerScreenState extends State<MagicTowerScreen> {
 
       enemiesHP[0] -= damageToMonster;
 
+      // 2. Verifica vitória no andar
       if (enemiesHP[0] <= 0) {
         _handleFloorVictory();
         return;
       }
 
-      // Contra-ataque do Monstro
+      // 3. Contra-ataque do Monstro
       int effectiveDamage = (currentEnemies[0].atk - widget.hero.totalDef);
       if (effectiveDamage < 2) effectiveDamage = 2;
 
       widget.hero.hp -= effectiveDamage;
       battleLog = "Andar $currentFloor: Recebeu $effectiveDamage de dano!";
 
+      // 4. Verifica derrota
       if (widget.hero.hp <= 0) _handleDefeat();
     });
   }
@@ -88,8 +92,10 @@ class _MagicTowerScreenState extends State<MagicTowerScreen> {
     totalGoldEarned += 10;
     widget.hero.gold += 10;
 
-    // Aqui você salvaria o recorde do ranking no futuro
-    // if (currentFloor > hero.maxTowerFloor) hero.maxTowerFloor = currentFloor;
+    // SALVA O RECORD NO MODELO
+    if (currentFloor > widget.hero.maxTowerFloor) {
+      widget.hero.maxTowerFloor = currentFloor;
+    }
 
     showDialog(
       context: context,
@@ -109,6 +115,8 @@ class _MagicTowerScreenState extends State<MagicTowerScreen> {
               Navigator.pop(context);
               Navigator.pop(context);
               widget.onUpdate();
+              // Salva progresso ao sair
+              widget.hero.saveToSupabase();
             },
             child: const Text(
               "SAIR COM O OURO",
@@ -118,6 +126,8 @@ class _MagicTowerScreenState extends State<MagicTowerScreen> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
+              // Salva progresso para garantir que o andar vencido não seja perdido
+              widget.hero.saveToSupabase();
               setState(() {
                 currentFloor++;
                 battleLog = "Subindo para o andar $currentFloor...";
@@ -148,9 +158,10 @@ class _MagicTowerScreenState extends State<MagicTowerScreen> {
         actions: [
           ElevatedButton(
             onPressed: () {
-              // Penalidade da torre: perde o ouro que ganhou nela
+              // Penalidade: perde apenas o que ganhou NESTA sessão de torre
               widget.hero.gold -= totalGoldEarned;
               widget.onUpdate();
+              widget.hero.saveToSupabase();
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(
@@ -180,15 +191,12 @@ class _MagicTowerScreenState extends State<MagicTowerScreen> {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // 1. FUNDO DA TORRE (A imagem digna que você gerou)
+          // FUNDO DA TORRE
           Positioned.fill(
-            child: Image.asset(
-              "assets/images/torre.webp", // Certifique-se de que o nome está igual ao arquivo
-              fit: BoxFit.cover,
-            ),
+            child: Image.asset("assets/images/torre.webp", fit: BoxFit.cover),
           ),
 
-          // 2. FILTRO DE CONTRASTE (Para a interface não sumir no fundo)
+          // FILTRO DE CONTRASTE
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
@@ -196,22 +204,20 @@ class _MagicTowerScreenState extends State<MagicTowerScreen> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.black.withOpacity(0.4), // Escurece o topo
-                    Colors.transparent, // Deixa o meio limpo para o monstro
-                    Colors.black.withOpacity(
-                      0.7,
-                    ), // Escurece a base para o botão/log
+                    Colors.black.withOpacity(0.4),
+                    Colors.transparent,
+                    Colors.black.withOpacity(0.7),
                   ],
                 ),
               ),
             ),
           ),
 
-          // 3. INTERFACE DO JOGO
+          // INTERFACE
           SafeArea(
             child: Column(
               children: [
-                // Cabeçalho com Estilo Neon
+                // Cabeçalho
                 Padding(
                   padding: const EdgeInsets.all(20),
                   child: Row(
@@ -251,7 +257,7 @@ class _MagicTowerScreenState extends State<MagicTowerScreen> {
                   ),
                 ),
 
-                // Arena de Batalha (Onde os monstros aparecem)
+                // Arena
                 Expanded(
                   child: MonsterArena(
                     enemies: currentEnemies,
@@ -261,7 +267,7 @@ class _MagicTowerScreenState extends State<MagicTowerScreen> {
                   ),
                 ),
 
-                // Log de Batalha Estilizado
+                // Log
                 Container(
                   padding: const EdgeInsets.all(15),
                   margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -270,12 +276,6 @@ class _MagicTowerScreenState extends State<MagicTowerScreen> {
                     color: Colors.black87,
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: Colors.cyan.withOpacity(0.5)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.cyan.withOpacity(0.2),
-                        blurRadius: 5,
-                      ),
-                    ],
                   ),
                   child: Text(
                     battleLog,
@@ -284,7 +284,7 @@ class _MagicTowerScreenState extends State<MagicTowerScreen> {
                   ),
                 ),
 
-                // Botão de Ação
+                // Botão de Ataque
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 30),
                   child: ElevatedButton(
@@ -300,7 +300,6 @@ class _MagicTowerScreenState extends State<MagicTowerScreen> {
                         ),
                       ),
                       elevation: 15,
-                      shadowColor: Colors.cyanAccent,
                     ),
                     onPressed: _processTurn,
                     child: const Text(

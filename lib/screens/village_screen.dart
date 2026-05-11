@@ -28,6 +28,7 @@ class _VillageScreenState extends State<VillageScreen> {
       });
 
       widget.onUpdate();
+      widget.hero.saveToSupabase();
       _mostrarMensagem("Você dormiu profundamente... HP Restaurado!");
     } else {
       _mostrarMensagem(
