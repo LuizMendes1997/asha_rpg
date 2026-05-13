@@ -18,13 +18,14 @@ class MonsterArena extends StatefulWidget {
   final List<int> enemiesHP;
   final List<MonsterDamageInfo> pendingDamages;
   final Function(Key) onDamageAnimationComplete;
-
+  final bool showName;
   const MonsterArena({
     super.key,
     required this.enemies,
     required this.enemiesHP,
     required this.pendingDamages,
     required this.onDamageAnimationComplete,
+    this.showName = true,
   });
 
   @override
@@ -78,13 +79,14 @@ class _MonsterArenaState extends State<MonsterArena> {
                         fit: BoxFit.contain,
                         filterQuality: FilterQuality.none,
                       ),
-                      Text(
-                        monster.name,
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 10,
+                      if (widget.showName) // <--- 3. SÓ MOSTRA SE FOR TRUE
+                        Text(
+                          monster.name,
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 10,
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ),

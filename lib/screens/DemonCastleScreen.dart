@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:asha_rpg/models/game_state.dart'; // O widget que faz os danos voarem
 import 'main_shell.dart';
 import '../widgets/monster_arena.dart';
+import '../data/item_data.dart';
 
 class DemonCastleScreen extends StatefulWidget {
   final HeroModel hero;
@@ -126,15 +127,10 @@ class _DemonCastleScreenState extends State<DemonCastleScreen> {
 
   void _handleFinalVictory() {
     // Recompensa Fixa: Espada Comum
-    Item reward = Item(
-      name: "Espada Comum",
-      type: ItemType.weapon,
-      iconPath: "assets/icons/items/sword.webp",
-      power: 5,
-      price: 150,
-    );
+    final reward = ItemData.espadacomum.copy();
 
     widget.hero.addItem(reward);
+
     widget.hero.gainExp(500); // Bônus de exp do castelo
 
     showDialog(

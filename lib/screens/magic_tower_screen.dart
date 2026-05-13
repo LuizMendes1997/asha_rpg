@@ -1,3 +1,5 @@
+import 'dart:math';
+import 'package:asha_rpg/data/item_data.dart';
 import 'package:flutter/material.dart';
 import 'package:asha_rpg/models/game_state.dart';
 import 'package:asha_rpg/widgets/monster_arena.dart';
@@ -21,6 +23,7 @@ class _MagicTowerScreenState extends State<MagicTowerScreen> {
   late int currentFloor;
   int totalGoldEarned = 0;
   String battleLog = "";
+  bool _isProcessing = false;
 
   late List<int> enemiesHP;
   late List<Monster> currentEnemies;
@@ -29,21 +32,24 @@ class _MagicTowerScreenState extends State<MagicTowerScreen> {
   @override
   void initState() {
     super.initState();
-    // CARREGA O PROGRESSO: Começa no próximo andar após o recorde atual
     currentFloor = widget.hero.maxTowerFloor + 1;
     battleLog = "Você entrou no $currentFloorº Andar da Torre Mágica...";
     _spawnFloorMonster();
   }
 
   void _spawnFloorMonster() {
-    // Escalonamento de dificuldade: +10 HP e +2 ATK por andar
+    double scale = pow(1.12, currentFloor - 1).toDouble();
+    int hpBase = 40;
+    int atkBase = 7;
+    int defBase = 2;
+
     Monster monstro = Monster(
-      name: "Guardião da Torre F$currentFloor",
-      hp: 30 + (currentFloor * 10),
-      atk: 5 + (currentFloor * 2),
-      def: 2 + (currentFloor),
-      expValue: 10 + currentFloor,
-      imagePath: 'assets/monsters/fantasma.webp',
+      name: _getMonsterName(currentFloor),
+      hp: (hpBase * scale).toInt() + (currentFloor * 5),
+      atk: (atkBase * scale).toInt() + 2,
+      def: (defBase * (1 + currentFloor * 0.1)).toInt(),
+      expValue: (10 * scale).toInt() + currentFloor,
+      imagePath: _getMonsterImage(currentFloor),
       isBoss: currentFloor % 5 == 0,
     );
 
@@ -54,12 +60,25 @@ class _MagicTowerScreenState extends State<MagicTowerScreen> {
     });
   }
 
-  void _processTurn() {
-    setState(() {
-      // 1. Ataque do Herói
-      int damageToMonster = widget.hero.totalStr - currentEnemies[0].def;
-      if (damageToMonster < 1) damageToMonster = 1;
+  String _getMonsterName(int floor) {
+    if (floor % 5 == 0) return "Guardião Ancestral";
+    if (floor > 10) return "Sentinela de Éter";
+    return "Olho Arcano";
+  }
 
+  String _getMonsterImage(int floor) {
+    if (floor % 5 == 0) return 'assets/monsters/boss_golem.webp';
+    if (floor > 10) return 'assets/monsters/spectral_armor.webp';
+    return 'assets/monsters/eye_watcher.webp';
+  }
+
+  void _processTurn() async {
+    if (_isProcessing || enemiesHP[0] <= 0 || widget.hero.hp <= 0) return;
+    setState(() => _isProcessing = true);
+
+    setState(() {
+      int damageToMonster = (widget.hero.totalStr - currentEnemies[0].def)
+          .clamp(1, 9999);
       _activeDamagesOnMonsters.add(
         MonsterDamageInfo(
           monsterIndex: 0,
@@ -67,34 +86,46 @@ class _MagicTowerScreenState extends State<MagicTowerScreen> {
           key: UniqueKey(),
         ),
       );
-
       enemiesHP[0] -= damageToMonster;
 
-      // 2. Verifica vitória no andar
       if (enemiesHP[0] <= 0) {
-        _handleFloorVictory();
+        Future.delayed(
+          const Duration(milliseconds: 600),
+          () => _handleFloorVictory(),
+        );
         return;
       }
 
-      // 3. Contra-ataque do Monstro
-      int effectiveDamage = (currentEnemies[0].atk - widget.hero.totalDef);
-      if (effectiveDamage < 2) effectiveDamage = 2;
-
+      int effectiveDamage = (currentEnemies[0].atk - widget.hero.totalDef)
+          .clamp(2, 9999);
       widget.hero.hp -= effectiveDamage;
-      battleLog = "Andar $currentFloor: Recebeu $effectiveDamage de dano!";
+      battleLog = "Recebeu $effectiveDamage de dano!";
 
-      // 4. Verifica derrota
-      if (widget.hero.hp <= 0) _handleDefeat();
+      if (widget.hero.hp <= 0) {
+        Future.delayed(
+          const Duration(milliseconds: 600),
+          () => _handleDefeat(),
+        );
+      }
     });
+
+    await Future.delayed(const Duration(milliseconds: 400));
+    if (mounted) setState(() => _isProcessing = false);
   }
 
   void _handleFloorVictory() {
-    totalGoldEarned += 10;
-    widget.hero.gold += 10;
+    int floorGold = 10 + (currentFloor * 3);
+    totalGoldEarned += floorGold;
+    widget.hero.gold += floorGold;
+    String lootMessage = "";
 
-    // SALVA O RECORD NO MODELO
-    if (currentFloor > widget.hero.maxTowerFloor) {
+    if (currentFloor > widget.hero.maxTowerFloor)
       widget.hero.maxTowerFloor = currentFloor;
+
+    if (currentFloor % 5 == 0) {
+      final reward = ItemData.espadacomum.copy();
+      widget.hero.addItem(reward);
+      lootMessage = "\n✨ ITEM: ${reward.name}";
     }
 
     showDialog(
@@ -103,11 +134,11 @@ class _MagicTowerScreenState extends State<MagicTowerScreen> {
       builder: (context) => AlertDialog(
         backgroundColor: Colors.grey[900],
         title: Text(
-          "ANDAR $currentFloor CONCLUÍDO!",
+          "ANDAR $currentFloor",
           style: const TextStyle(color: Colors.cyanAccent),
         ),
         content: Text(
-          "Recompensa: +10 Ouro\nTotal acumulado: $totalGoldEarned Ouro\nDeseja continuar subindo?",
+          "+$floorGold Ouro$lootMessage\n\nTotal: $totalGoldEarned",
         ),
         actions: [
           TextButton(
@@ -115,26 +146,20 @@ class _MagicTowerScreenState extends State<MagicTowerScreen> {
               Navigator.pop(context);
               Navigator.pop(context);
               widget.onUpdate();
-              // Salva progresso ao sair
               widget.hero.saveToSupabase();
             },
-            child: const Text(
-              "SAIR COM O OURO",
-              style: TextStyle(color: Colors.amber),
-            ),
+            child: const Text("SAIR", style: TextStyle(color: Colors.amber)),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              // Salva progresso para garantir que o andar vencido não seja perdido
               widget.hero.saveToSupabase();
               setState(() {
                 currentFloor++;
-                battleLog = "Subindo para o andar $currentFloor...";
                 _spawnFloorMonster();
               });
             },
-            child: const Text("SUBIR PRÓXIMO ANDAR"),
+            child: const Text("SUBIR"),
           ),
         ],
       ),
@@ -148,17 +173,11 @@ class _MagicTowerScreenState extends State<MagicTowerScreen> {
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.grey[900],
-        title: const Text(
-          "DERROTA NA TORRE",
-          style: TextStyle(color: Colors.red),
-        ),
-        content: Text(
-          "Você caiu no andar $currentFloor.\nTodo o ouro acumulado nesta subida foi perdido!",
-        ),
+        title: const Text("DERROTA", style: TextStyle(color: Colors.red)),
+        content: Text("Perdeu $totalGoldEarned ouro acumulado."),
         actions: [
           ElevatedButton(
             onPressed: () {
-              // Penalidade: perde apenas o que ganhou NESTA sessão de torre
               widget.hero.gold -= totalGoldEarned;
               widget.onUpdate();
               widget.hero.saveToSupabase();
@@ -170,7 +189,7 @@ class _MagicTowerScreenState extends State<MagicTowerScreen> {
                 (route) => false,
               );
             },
-            child: const Text("VOLTAR PARA VILA"),
+            child: const Text("VILA"),
           ),
         ],
       ),
@@ -191,131 +210,165 @@ class _MagicTowerScreenState extends State<MagicTowerScreen> {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // FUNDO DA TORRE
           Positioned.fill(
             child: Image.asset("assets/images/torre.webp", fit: BoxFit.cover),
           ),
-
-          // FILTRO DE CONTRASTE
           Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withOpacity(0.4),
-                    Colors.transparent,
-                    Colors.black.withOpacity(0.7),
-                  ],
-                ),
-              ),
-            ),
+            child: Container(color: Colors.black.withOpacity(0.6)),
           ),
-
-          // INTERFACE
           SafeArea(
             child: Column(
               children: [
-                // Cabeçalho
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                _buildTopBar(),
+                Expanded(
+                  child: Stack(
+                    alignment: Alignment.center,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.black45,
-                          borderRadius: BorderRadius.circular(15),
-                          border: Border.all(color: Colors.cyan, width: 1),
-                        ),
-                        child: Text(
-                          "TORRE MÁGICA - F$currentFloor",
-                          style: const TextStyle(
-                            color: Colors.cyanAccent,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            shadows: [
-                              Shadow(color: Colors.cyan, blurRadius: 10),
-                            ],
-                          ),
+                      // --- NOME DO MONSTRO (APENAS AQUI NO TOPO) ---
+                      Positioned(
+                        top: 10,
+                        child: Column(
+                          children: [
+                            Text(
+                              currentEnemies[0].name.toUpperCase(),
+                              style: TextStyle(
+                                color: currentEnemies[0].isBoss
+                                    ? Colors.redAccent
+                                    : Colors.white,
+                                fontSize: 26,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 4,
+                                shadows: [
+                                  const Shadow(
+                                    blurRadius: 15,
+                                    color: Colors.black,
+                                    offset: Offset(2, 2),
+                                  ),
+                                  Shadow(
+                                    blurRadius: 10,
+                                    color: currentEnemies[0].isBoss
+                                        ? Colors.red
+                                        : Colors.cyan,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              "LVL $currentFloor",
+                              style: TextStyle(
+                                color: Colors.white54,
+                                fontSize: 12,
+                                letterSpacing: 2,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      Text(
-                        "HP: ${widget.hero.hp}",
-                        style: const TextStyle(
-                          color: Colors.greenAccent,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
+
+                      // --- MONSTRO (LIMPO, SEM NOME EMBAIXO) ---
+                      Align(
+                        alignment: Alignment.bottomCenter,
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 40),
+                          child: Transform.scale(
+                            scale: 2.5, // Seu scale de preferência
+                            child: MonsterArena(
+                              // Se o seu MonsterArena tiver a opção de ocultar o nome, use-a.
+                              // Caso contrário, o nome que eu coloquei acima será o destaque.
+                              enemies: currentEnemies,
+                              enemiesHP: enemiesHP,
+                              pendingDamages: _activeDamagesOnMonsters,
+                              onDamageAnimationComplete:
+                                  _onDamageAnimationComplete,
+                              showName: false,
+                            ),
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
-
-                // Arena
-                Expanded(
-                  child: MonsterArena(
-                    enemies: currentEnemies,
-                    enemiesHP: enemiesHP,
-                    pendingDamages: _activeDamagesOnMonsters,
-                    onDamageAnimationComplete: _onDamageAnimationComplete,
-                  ),
-                ),
-
-                // Log
-                Container(
-                  padding: const EdgeInsets.all(15),
-                  margin: const EdgeInsets.symmetric(horizontal: 20),
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.black87,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.cyan.withOpacity(0.5)),
-                  ),
-                  child: Text(
-                    battleLog,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
-                  ),
-                ),
-
-                // Botão de Ataque
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 30),
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.cyan.shade900,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(220, 60),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                        side: const BorderSide(
-                          color: Colors.cyanAccent,
-                          width: 2,
-                        ),
-                      ),
-                      elevation: 15,
-                    ),
-                    onPressed: _processTurn,
-                    child: const Text(
-                      "CONJURAR ATAQUE",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.5,
-                      ),
-                    ),
-                  ),
-                ),
+                _buildLog(),
+                _buildAttackButton(),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTopBar() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          _buildHeaderInfo("F$currentFloor", Colors.cyan),
+          _buildHeaderInfo("HP: ${widget.hero.hp}", Colors.greenAccent),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeaderInfo(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.black87,
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: color.withOpacity(0.5)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontWeight: FontWeight.bold,
+          fontSize: 14,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLog() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
+      padding: const EdgeInsets.all(10),
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.black45,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        battleLog,
+        style: const TextStyle(color: Colors.white60, fontSize: 12),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+
+  Widget _buildAttackButton() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 30),
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: _isProcessing ? Colors.grey[800] : Colors.red[900],
+          padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 18),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+          ),
+          elevation: 10,
+        ),
+        onPressed: _processTurn,
+        child: Text(
+          _isProcessing ? "CONJURANDO..." : "ATAQUE MÁGICO",
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
       ),
     );
   }
