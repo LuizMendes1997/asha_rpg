@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:math';
 import '../models/game_state.dart';
 import '../data/loot_table.dart';
 import '../widgets/monster_arena.dart';
@@ -29,6 +30,13 @@ class _BattleScreenState extends State<BattleScreen> {
   late List<int> enemiesHP;
   int currentEnemyIndex = 0;
   List<MonsterDamageInfo> _activeDamagesOnMonsters = [];
+  List<int> _evadingMonsters = [];
+
+  // Controles de Animação e Delay
+  bool _isAttacking = false;
+  int? _attackingMonsterIndex;
+  int? _slashTargetIndex;
+  bool _showRedFlash = false;
 
   @override
   void initState() {
@@ -37,99 +45,93 @@ class _BattleScreenState extends State<BattleScreen> {
     battleLog = widget.startMessage;
   }
 
-  // --- MECÂNICA DE FUGA ---
-  void _handleFlee() {
-    // Penalidade: 30 de gold (ou o que ele tiver se for menos)
-    int penalty = widget.hero.gold >= 30 ? 30 : widget.hero.gold;
+  void _triggerMonsterEvade(int index) {
+    if (mounted) {
+      setState(() => _evadingMonsters.add(index));
+      Future.delayed(const Duration(milliseconds: 200), () {
+        if (mounted) setState(() => _evadingMonsters.remove(index));
+      });
+    }
+  }
+
+  // --- LÓGICA DE TURNO COMPLETA ---
+  Future<void> _processTurn() async {
+    if (_isAttacking) return;
 
     setState(() {
-      widget.hero.gold -= penalty;
+      _isAttacking = true;
+      _slashTargetIndex = currentEnemyIndex;
     });
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: const Text(
-          "FUGA!",
-          style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
-        ),
-        content: Text(
-          "Você fugiu como um covarde... e no caminho deixou cair $penalty moedas de ouro!",
-          style: const TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context); // Fecha o dialog
-              Navigator.pop(context); // Volta para o mapa
-              widget.onUpdate();
-            },
-            child: const Text("VOLTAR"),
+    // 1. TURNO DO HERÓI
+    bool monsterEvaded = Random().nextInt(100) < 10;
+    await Future.delayed(const Duration(milliseconds: 150));
+
+    setState(() {
+      if (monsterEvaded) {
+        battleLog =
+            "${widget.enemies[currentEnemyIndex].name} desviou do seu ataque!";
+        _triggerMonsterEvade(currentEnemyIndex);
+      } else {
+        int damageToMonster =
+            widget.hero.totalStr - widget.enemies[currentEnemyIndex].def;
+        if (damageToMonster < 1) damageToMonster = 1;
+
+        _activeDamagesOnMonsters.add(
+          MonsterDamageInfo(
+            monsterIndex: currentEnemyIndex,
+            damage: damageToMonster,
+            key: UniqueKey(),
           ),
-        ],
-      ),
-    );
-  }
+        );
 
-  void _processTurn() {
+        enemiesHP[currentEnemyIndex] -= damageToMonster;
+        battleLog =
+            "Você atacou ${widget.enemies[currentEnemyIndex].name} e causou $damageToMonster de dano!";
+        if (enemiesHP[currentEnemyIndex] <= 0) currentEnemyIndex++;
+      }
+      _slashTargetIndex = null;
+    });
+
+    if (currentEnemyIndex >= widget.enemies.length) {
+      _handleVictory();
+      setState(() => _isAttacking = false);
+      return;
+    }
+
+    // 2. TURNO DOS MONSTROS (CONTRA-ATAQUE)
+    await Future.delayed(const Duration(milliseconds: 400));
+    int rawMonsterDamage = 0;
+    for (int i = currentEnemyIndex; i < widget.enemies.length; i++) {
+      if (enemiesHP[i] > 0) {
+        setState(() => _attackingMonsterIndex = i); // Monstro pula
+        rawMonsterDamage += widget.enemies[i].atk;
+        await Future.delayed(const Duration(milliseconds: 150));
+        setState(() => _attackingMonsterIndex = null);
+      }
+    }
+
+    int effectiveDamage = (rawMonsterDamage - widget.hero.totalDef);
+    if (effectiveDamage < 2) effectiveDamage = 2;
+
     setState(() {
-      // --- 1. TURNO DO HERÓI ---
-      int damageToMonster =
-          widget.hero.totalStr - widget.enemies[currentEnemyIndex].def;
-      if (damageToMonster < 1) damageToMonster = 1; // Dano mínimo
-
-      _activeDamagesOnMonsters.add(
-        MonsterDamageInfo(
-          monsterIndex: currentEnemyIndex,
-          damage: damageToMonster,
-          key: UniqueKey(),
-        ),
-      );
-
-      enemiesHP[currentEnemyIndex] -= damageToMonster;
-      battleLog =
-          "Você atacou ${widget.enemies[currentEnemyIndex].name} e causou $damageToMonster de dano!";
-
-      if (enemiesHP[currentEnemyIndex] <= 0) {
-        battleLog +=
-            "\nO ${widget.enemies[currentEnemyIndex].name} foi derrotado!";
-        currentEnemyIndex++;
-      }
-
-      // Verifica vitória antes do contra-ataque
-      if (currentEnemyIndex >= widget.enemies.length) {
-        _handleVictory();
-        return;
-      }
-
-      // --- 2. TURNO DOS MONSTROS ---
-      int rawMonsterDamage = 0;
-      for (int i = currentEnemyIndex; i < widget.enemies.length; i++) {
-        if (enemiesHP[i] > 0) {
-          rawMonsterDamage += widget.enemies[i].atk;
-        }
-      }
-
-      int effectiveDamage = (rawMonsterDamage - widget.hero.totalDef);
-      if (effectiveDamage < 2) effectiveDamage = 2; // Dano mínimo dos monstros
-
       widget.hero.hp -= effectiveDamage;
+      _showRedFlash = true; // Tela vermelha
       battleLog +=
-          "\nOs monstros revidaram! Você recebeu $effectiveDamage de dano.";
-
-      if (widget.hero.hp <= 0) {
-        _handleDefeat();
-      }
+          "\nOs monstros revidam! Você recebeu $effectiveDamage de dano.";
     });
-  }
 
-  void _onDamageAnimationComplete(Key damageKey) {
-    if (!mounted) return;
-    setState(() {
-      _activeDamagesOnMonsters.removeWhere((info) => info.key == damageKey);
-    });
+    await Future.delayed(const Duration(milliseconds: 100));
+    setState(() => _showRedFlash = false);
+
+    if (widget.hero.hp <= 0) {
+      _handleDefeat();
+      return;
+    }
+
+    // Cooldown final para totalizar ~1 segundo
+    await Future.delayed(const Duration(milliseconds: 300));
+    if (mounted) setState(() => _isAttacking = false);
   }
 
   void _handleVictory() {
@@ -138,13 +140,12 @@ class _BattleScreenState extends State<BattleScreen> {
     int totalGold = 0;
     List<String> questProgressMessages = [];
 
-    // O loop começa aqui: vamos processar cada inimigo morto
     for (var m in widget.enemies) {
       allLoot.addAll(LootTable.getDrops(m.name));
       totalExp += m.expValue;
-      totalGold += 5; // Gold base por monstro
+      totalGold += 5;
 
-      // LÓGICA DE MISSÃO: Agora o 'm' existe aqui dentro!
+      // Progresso de Missão
       for (var quest in widget.hero.activeQuests) {
         if (!quest.isCompleted &&
             m.name.toLowerCase().contains(
@@ -152,28 +153,22 @@ class _BattleScreenState extends State<BattleScreen> {
             )) {
           if (quest.currentKillCount < quest.requiredKillCount) {
             quest.currentKillCount++;
-
-            // Guarda a mensagem para mostrar no diálogo depois
             String msg =
                 "${quest.title}: ${quest.currentKillCount}/${quest.requiredKillCount}";
-            if (!questProgressMessages.contains(msg)) {
+            if (!questProgressMessages.contains(msg))
               questProgressMessages.add(msg);
-            }
-
-            debugPrint("Quest Progresso: $msg");
           }
         }
       }
     }
 
-    // Aplica os ganhos ao herói
     widget.hero.gainExp(totalExp);
     widget.hero.gold += totalGold;
     for (var item in allLoot) {
       widget.hero.addItem(item);
     }
     widget.hero.saveToSupabase();
-    // Mostra o resultado da batalha
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -195,19 +190,12 @@ class _BattleScreenState extends State<BattleScreen> {
               "💰 Gold: +$totalGold",
               style: const TextStyle(color: Colors.amber),
             ),
-
-            // --- SEÇÃO DE MISSÃO NO DIÁLOGO ---
             if (questProgressMessages.isNotEmpty) ...[
-              const SizedBox(height: 15),
+              const SizedBox(height: 10),
               const Text(
                 "📜 MISSÕES:",
-                style: TextStyle(
-                  color: Colors.orangeAccent,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(color: Colors.orangeAccent, fontSize: 10),
               ),
-              const SizedBox(height: 5),
               ...questProgressMessages.map(
                 (msg) => Text(
                   msg,
@@ -218,19 +206,17 @@ class _BattleScreenState extends State<BattleScreen> {
                 ),
               ),
             ],
-
-            // ----------------------------------
             if (allLoot.isNotEmpty) ...[
-              const SizedBox(height: 15),
+              const SizedBox(height: 10),
               const Text(
                 "🎒 ITENS ENCONTRADOS:",
                 style: TextStyle(color: Colors.white, fontSize: 10),
               ),
               const SizedBox(height: 5),
               Wrap(
-                spacing: 5,
+                spacing: 8,
                 children: allLoot
-                    .map((i) => Image.asset(i.iconPath, width: 24, height: 24))
+                    .map((i) => Image.asset(i.iconPath, width: 30, height: 30))
                     .toList(),
               ),
             ],
@@ -239,8 +225,8 @@ class _BattleScreenState extends State<BattleScreen> {
         actions: [
           ElevatedButton(
             onPressed: () {
-              Navigator.pop(context); // Fecha o dialog
-              Navigator.pop(context); // Sai da batalha
+              Navigator.pop(context);
+              Navigator.pop(context);
               widget.onUpdate();
             },
             child: const Text("SAIR"),
@@ -252,8 +238,7 @@ class _BattleScreenState extends State<BattleScreen> {
 
   void _handleDefeat() {
     widget.hero.hp = 0;
-    widget.hero.gold = (widget.hero.gold * 0.7)
-        .toInt(); // Perde 30% do gold ao morrer
+    widget.hero.gold = (widget.hero.gold * 0.7).toInt(); // Perde 30%
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -261,7 +246,7 @@ class _BattleScreenState extends State<BattleScreen> {
         backgroundColor: Colors.grey[900],
         title: const Text("DERROTA", style: TextStyle(color: Colors.red)),
         content: const Text(
-          "Você desmaiou e perdeu parte do seu ouro...",
+          "Você desmaiou e perdeu um pouco de ouro...",
           style: TextStyle(color: Colors.white70),
         ),
         actions: [
@@ -277,15 +262,29 @@ class _BattleScreenState extends State<BattleScreen> {
               );
             },
             child: const Text(
-              "VOLTAR PARA A VILA",
-              style: TextStyle(
-                color: Colors.amber,
-                fontWeight: FontWeight.bold,
-              ),
+              "VOLTAR PARA CIDADE",
+              style: TextStyle(color: Colors.amber),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  void _handleFlee() {
+    if (_isAttacking) return;
+    int penalty = widget.hero.gold >= 30 ? 30 : widget.hero.gold;
+    widget.hero.gold -= penalty;
+    widget.hero.saveToSupabase();
+    Navigator.pop(context);
+    widget.onUpdate();
+  }
+
+  void _onDamageAnimationComplete(Key damageKey) {
+    if (!mounted) return;
+    setState(
+      () =>
+          _activeDamagesOnMonsters.removeWhere((info) => info.key == damageKey),
     );
   }
 
@@ -296,6 +295,7 @@ class _BattleScreenState extends State<BattleScreen> {
     return Scaffold(
       body: Stack(
         children: [
+          // Background
           Positioned.fill(
             child: Image.asset(
               widget.backgroundImage,
@@ -304,47 +304,48 @@ class _BattleScreenState extends State<BattleScreen> {
               colorBlendMode: BlendMode.darken,
             ),
           ),
+
+          // Flash de Dano
+          if (_showRedFlash)
+            Positioned.fill(
+              child: Container(color: Colors.red.withOpacity(0.3)),
+            ),
+
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        "COMBATE",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(
-                          Icons.logout,
-                          color: Colors.orangeAccent,
-                        ),
-                        onPressed: allDead
-                            ? () => Navigator.pop(context)
-                            : _handleFlee,
-                      ),
-                    ],
+                  const Text(
+                    "COMBATE",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 3,
+                    ),
                   ),
+
+                  // Arena
                   Expanded(
                     flex: 3,
                     child: MonsterArena(
                       enemies: widget.enemies,
                       enemiesHP: enemiesHP,
                       pendingDamages: _activeDamagesOnMonsters,
+                      evadingMonsterIndices: _evadingMonsters,
+                      attackingMonsterIndex: _attackingMonsterIndex,
+                      slashTargetIndex: _slashTargetIndex,
                       onDamageAnimationComplete: _onDamageAnimationComplete,
                     ),
                   ),
+
+                  // Log
                   Container(
                     height: 80,
                     width: double.infinity,
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.6),
+                      color: Colors.black.withOpacity(0.7),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: Colors.white10),
                     ),
@@ -359,11 +360,14 @@ class _BattleScreenState extends State<BattleScreen> {
                     ),
                   ),
                   const SizedBox(height: 15),
+
+                  // Controles
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.grey[900]?.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.black87,
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(color: Colors.white24),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -373,7 +377,10 @@ class _BattleScreenState extends State<BattleScreen> {
                           children: [
                             Text(
                               widget.hero.name,
-                              style: const TextStyle(color: Colors.white),
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
+                              ),
                             ),
                             Text(
                               "HP: ${widget.hero.hp}",
@@ -381,7 +388,7 @@ class _BattleScreenState extends State<BattleScreen> {
                                 color: widget.hero.hp < 20
                                     ? Colors.red
                                     : Colors.greenAccent,
-                                fontSize: 20,
+                                fontSize: 22,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -389,28 +396,35 @@ class _BattleScreenState extends State<BattleScreen> {
                         ),
                         Row(
                           children: [
-                            if (!allDead)
+                            if (!allDead) ...[
                               TextButton(
-                                onPressed: _handleFlee,
+                                onPressed: _isAttacking ? null : _handleFlee,
                                 child: const Text(
-                                  "FUGIR (-30G)",
+                                  "FUGIR (30G)",
                                   style: TextStyle(color: Colors.orangeAccent),
                                 ),
                               ),
-                            const SizedBox(width: 10),
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red[900],
-                              ),
-                              onPressed: allDead ? null : _processTurn,
-                              child: const Text(
-                                "ATACAR",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
+                              const SizedBox(width: 10),
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: _isAttacking
+                                      ? Colors.grey
+                                      : Colors.red[900],
+                                ),
+                                onPressed: _isAttacking ? null : _processTurn,
+                                child: Text(
+                                  _isAttacking ? "..." : "ATACAR",
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
-                            ),
+                            ] else
+                              ElevatedButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text("SAIR"),
+                              ),
                           ],
                         ),
                       ],

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/game_state.dart';
-import 'damage_number.dart'; // Importe o widget de dano que criamos
+import 'damage_number.dart';
 
 class MonsterDamageInfo {
   final int monsterIndex;
@@ -13,45 +13,50 @@ class MonsterDamageInfo {
   });
 }
 
-class MonsterArena extends StatefulWidget {
+class MonsterArena extends StatelessWidget {
   final List<Monster> enemies;
   final List<int> enemiesHP;
   final List<MonsterDamageInfo> pendingDamages;
+  final List<int> evadingMonsterIndices;
+  final int? attackingMonsterIndex;
+  final int? slashTargetIndex;
   final Function(Key) onDamageAnimationComplete;
   final bool showName;
+
   const MonsterArena({
     super.key,
     required this.enemies,
     required this.enemiesHP,
     required this.pendingDamages,
+    this.evadingMonsterIndices =
+        const [], // Agora opcional para não quebrar outras telas
+    this.attackingMonsterIndex,
+    this.slashTargetIndex,
     required this.onDamageAnimationComplete,
     this.showName = true,
   });
 
-  @override
-  State<MonsterArena> createState() => _MonsterArenaState();
-}
-
-class _MonsterArenaState extends State<MonsterArena> {
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final arenaWidth = constraints.maxWidth;
         final arenaHeight = constraints.maxHeight;
-
         List<Widget> elements = [];
 
-        // 1. RENDERIZA OS MONSTROS
-        for (int i = 0; i < widget.enemies.length; i++) {
-          final monster = widget.enemies[i];
-          final hpAtual = widget.enemiesHP[i];
+        for (int i = 0; i < enemies.length; i++) {
+          final monster = enemies[i];
+          final hpAtual = enemiesHP[i];
           final percentHP = (hpAtual / monster.hp).clamp(0.0, 1.0);
           double monsterSize = monster.isBoss ? 180 : 100;
 
+          bool isEvading = evadingMonsterIndices.contains(i);
+          bool isAttacking = attackingMonsterIndex == i;
+          bool isBeingSlashed = slashTargetIndex == i;
+
           Offset posicao = _calcularPosicao(
             index: i,
-            total: widget.enemies.length,
+            total: enemies.length,
             isBoss: monster.isBoss,
             arenaWidth: arenaWidth,
             arenaHeight: arenaHeight,
@@ -63,29 +68,47 @@ class _MonsterArenaState extends State<MonsterArena> {
               left: posicao.dx,
               top: posicao.dy,
               child: AnimatedOpacity(
-                // Transição suave quando morre
                 duration: const Duration(milliseconds: 500),
                 opacity: hpAtual <= 0 ? 0.0 : 1.0,
-                child: SizedBox(
-                  width: monsterSize,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
+                child: AnimatedPadding(
+                  duration: const Duration(milliseconds: 100),
+                  padding: EdgeInsets.only(
+                    left: isEvading ? 40 : 0,
+                    top: isAttacking ? 20 : 0,
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
                     children: [
-                      if (hpAtual > 0) _buildHPBar(monsterSize, percentHP),
-                      Image.asset(
-                        monster.imagePath,
+                      SizedBox(
                         width: monsterSize,
-                        height: monsterSize,
-                        fit: BoxFit.contain,
-                        filterQuality: FilterQuality.none,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (hpAtual > 0)
+                              _buildHPBar(monsterSize, percentHP),
+                            Image.asset(
+                              monster.imagePath,
+                              width: monsterSize,
+                              height: monsterSize,
+                              fit: BoxFit.contain,
+                              filterQuality: FilterQuality.none,
+                            ),
+                            if (showName)
+                              Text(
+                                monster.name,
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 10,
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
-                      if (widget.showName) // <--- 3. SÓ MOSTRA SE FOR TRUE
-                        Text(
-                          monster.name,
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 10,
-                          ),
+                      if (isBeingSlashed)
+                        Icon(
+                          Icons.flash_on,
+                          color: Colors.white,
+                          size: monsterSize * 0.7,
                         ),
                     ],
                   ),
@@ -95,15 +118,13 @@ class _MonsterArenaState extends State<MonsterArena> {
           );
         }
 
-        // 2. RENDERIZA OS DANOS FLUTUANTES (SISTEMA 4)
-        for (var damageInfo in widget.pendingDamages) {
-          if (damageInfo.monsterIndex >= widget.enemies.length) continue;
-
-          final monster = widget.enemies[damageInfo.monsterIndex];
+        for (var damageInfo in pendingDamages) {
+          if (damageInfo.monsterIndex >= enemies.length) continue;
+          final monster = enemies[damageInfo.monsterIndex];
           double monsterSize = monster.isBoss ? 180 : 100;
           Offset posicao = _calcularPosicao(
             index: damageInfo.monsterIndex,
-            total: widget.enemies.length,
+            total: enemies.length,
             isBoss: monster.isBoss,
             arenaWidth: arenaWidth,
             arenaHeight: arenaHeight,
@@ -113,12 +134,12 @@ class _MonsterArenaState extends State<MonsterArena> {
           elements.add(
             Positioned(
               key: damageInfo.key,
-              left: posicao.dx + (monsterSize / 2) - 20, // Centraliza o número
-              top: posicao.dy - 20, // Aparece um pouco acima da cabeça
+              left: posicao.dx + (monsterSize / 2) - 20,
+              top: posicao.dy - 20,
               child: DamageNumber(
                 damage: damageInfo.damage,
                 onAnimationComplete: () =>
-                    widget.onDamageAnimationComplete(damageInfo.key),
+                    onDamageAnimationComplete(damageInfo.key),
               ),
             ),
           );
@@ -161,12 +182,9 @@ class _MonsterArenaState extends State<MonsterArena> {
   }) {
     double centerX = arenaWidth / 2 - (monsterSize / 2);
     double centerY = (arenaHeight * 0.65) - (monsterSize / 2);
-
     if (isBoss && total == 1) return Offset(centerX, centerY + 20);
-
     double hSpace = monsterSize * 0.8;
     double vSpace = 40;
-
     switch (total) {
       case 1:
         return Offset(centerX, centerY);
