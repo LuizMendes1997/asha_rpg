@@ -65,6 +65,77 @@ class ItemData {
     iconPath: 'assets/icons/fragmentosDivinos.webp',
     quantity: 1,
   );
+  static Item couro = Item(
+    name: "Couro",
+    type: ItemType.material,
+    price: 1,
+    isStackable: true,
+    iconPath: 'assets/icons/couro.webp',
+    quantity: 1,
+  );
+
+  static Item esmeralda = Item(
+    name: "Esmeralda",
+    type: ItemType.material,
+    price: 1,
+    isStackable: true,
+    iconPath: 'assets/icons/esmeralda.webp',
+    quantity: 1,
+  );
+
+  static Item lingoteDeOuro = Item(
+    name: "Lingote de Ouro",
+    type: ItemType.material,
+    price: 1,
+    isStackable: true,
+    iconPath: 'assets/icons/lingotedeouro.webp', // tudo junto e minúsculo
+    quantity: 1,
+  );
+
+  static Item lingoteDeBronze = Item(
+    name: "Lingote de Bronze",
+    type: ItemType.material,
+    price: 1,
+    isStackable: true,
+    iconPath: 'assets/icons/lingotedebronze.webp', // tudo junto e minúsculo
+    quantity: 1,
+  );
+
+  static Item lingoteDePrata = Item(
+    name: "Lingote de Prata",
+    type: ItemType.material,
+    price: 1,
+    isStackable: true,
+    iconPath: 'assets/icons/lingotedeprata.webp', // tudo junto e minúsculo
+    quantity: 1,
+  );
+
+  static Item obsidiana = Item(
+    name: "Obsidiana",
+    type: ItemType.material,
+    price: 1,
+    isStackable: true,
+    iconPath: 'assets/icons/obsidiana.webp',
+    quantity: 1,
+  );
+
+  static Item rubi = Item(
+    name: "Rubi",
+    type: ItemType.material,
+    price: 1,
+    isStackable: true,
+    iconPath: 'assets/icons/rubi.webp',
+    quantity: 1,
+  );
+
+  static Item safira = Item(
+    name: "Safira",
+    type: ItemType.material,
+    price: 1,
+    isStackable: true,
+    iconPath: 'assets/icons/safira.webp',
+    quantity: 1,
+  );
   static Item penaDourada = Item(
     name: "Pena Dourada",
     type: ItemType.material,
@@ -256,6 +327,6 @@ class ItemData {
     power: 80,
     price: 300,
     isStackable: false,
-    iconPath: 'assets/icons/devoradoradesois.webp',
+    iconPath: 'assets/icons/devoradordesois.webp',
   );
 }

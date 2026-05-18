@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/game_state.dart';
 import 'guild_screen.dart';
 import 'LinhagemScreen.dart';
+import 'chat_screen.dart';
 
 class VillageScreen extends StatefulWidget {
   final HeroModel hero;
@@ -246,6 +247,23 @@ class _VillageScreenState extends State<VillageScreen> {
                     context,
                     MaterialPageRoute(
                       builder: (context) => GuildScreen(
+                        hero: widget.hero,
+                        onUpdate: widget.onUpdate,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              _regionCard(
+                context,
+                "Chat",
+                "Fale bem e chama geral pra porrada",
+                "assets/icons/guilda.webp", // Sugestão: troque para assets/icons/guilda.webp se tiver
+                () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ChatScreen(
                         hero: widget.hero,
                         onUpdate: widget.onUpdate,
                       ),

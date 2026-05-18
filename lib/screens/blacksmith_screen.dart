@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/game_state.dart';
+import '../models/game_state.dart'; // Ajuste para o seu caminho real
 import 'dart:math';
 
 class BlacksmithScreen extends StatefulWidget {
@@ -17,7 +17,7 @@ class BlacksmithScreen extends StatefulWidget {
 }
 
 class _BlacksmithScreenState extends State<BlacksmithScreen> {
-  // FUNÇÃO MÁGICA PARA A ANIMAÇÃO FLUTUANTE
+  // --- LÓGICA DE OVERLAY PARA TEXTO FLUTUANTE ---
   void _showFloatingText(String text, Color color) {
     late OverlayEntry overlayEntry;
 
@@ -32,6 +32,7 @@ class _BlacksmithScreenState extends State<BlacksmithScreen> {
     Overlay.of(context).insert(overlayEntry);
   }
 
+  // --- LÓGICA DE APRIMORAMENTO ---
   void _upgradeItem(Item item) {
     if (item.level >= 10) {
       _showFloatingText("MAX!", Colors.grey);
@@ -46,8 +47,9 @@ class _BlacksmithScreenState extends State<BlacksmithScreen> {
 
     setState(() {
       widget.hero.gold -= custo;
-      double chance = 1.0;
 
+      // Chance: 100% até o +2, depois cai 10% por nível
+      double chance = 1.0;
       if (item.level >= 2) {
         chance = (1.0 - ((item.level - 1) * 0.1)).clamp(0.1, 1.0);
       }
@@ -67,13 +69,14 @@ class _BlacksmithScreenState extends State<BlacksmithScreen> {
       }
       widget.hero.calculateStats();
     });
+
     widget.onUpdate();
     widget.hero.saveToSupabase();
   }
 
   @override
   Widget build(BuildContext context) {
-    final List<Item> upgradeableItems = _getUpgradeableItems();
+    final List<Item> upgradeableItems = _getSortedItems();
 
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A1A),
@@ -89,7 +92,11 @@ class _BlacksmithScreenState extends State<BlacksmithScreen> {
               padding: const EdgeInsets.only(right: 16),
               child: Text(
                 "💰 ${widget.hero.gold}g",
-                style: const TextStyle(color: Colors.amber, fontSize: 16),
+                style: const TextStyle(
+                  color: Colors.amber,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),
@@ -113,9 +120,6 @@ class _BlacksmithScreenState extends State<BlacksmithScreen> {
     );
   }
 
-  // ... (Mantenha seus métodos _buildHeader, _buildItemIcon, _buildUpgradeCard, etc. iguais aos originais)
-  // APENAS REMOVA AS FUNÇÕES _showSuccessSnippet e _showErrorSnippet lá debaixo.
-
   Widget _buildHeader() {
     return Container(
       width: double.infinity,
@@ -127,15 +131,11 @@ class _BlacksmithScreenState extends State<BlacksmithScreen> {
           colors: [const Color(0xFF2C0B00), Colors.black.withOpacity(0.8)],
         ),
       ),
-      child: Column(
+      child: const Column(
         children: [
-          const Icon(
-            Icons.gavel,
-            size: 70,
-            color: Colors.orangeAccent,
-          ), // Usei icon pra não dar erro de asset
-          const SizedBox(height: 10),
-          const Text(
+          Icon(Icons.gavel, size: 50, color: Colors.orangeAccent),
+          SizedBox(height: 10),
+          Text(
             "\"O aço nunca mente.\"",
             style: TextStyle(
               fontStyle: FontStyle.italic,
@@ -148,60 +148,115 @@ class _BlacksmithScreenState extends State<BlacksmithScreen> {
   }
 
   Widget _buildUpgradeCard(Item item) {
+    final statData = item.mainStat;
+    final bool isEquipped = _isItemEquipped(item);
     int custo = (item.level + 1) * 50;
-    double chance = item.level < 2
-        ? 1.0
-        : (1.0 - ((item.level - 1) * 0.1)).clamp(0.1, 1.0);
-    final stat = item.mainStat;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF262626), Color(0xFF3D1400)],
-        ),
+        color: const Color(0xFF262626),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: item.level >= 5
-              ? Colors.orange.withOpacity(0.5)
-              : Colors.white10,
+          color: isEquipped ? Colors.green.withOpacity(0.5) : Colors.white10,
+          width: 1.5,
         ),
       ),
       child: ListTile(
-        leading: Icon(Icons.shield_outlined, color: Colors.white),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        leading: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.black26,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Image.asset(
+                item.iconPath,
+                filterQuality: FilterQuality.none, // Mantém o Pixel Art nítido
+                fit: BoxFit.contain,
+              ),
+            ),
+            if (isEquipped)
+              Positioned(
+                top: -5,
+                right: -5,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 5,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.green,
+                    borderRadius: BorderRadius.circular(4),
+                    boxShadow: const [
+                      BoxShadow(blurRadius: 4, color: Colors.black54),
+                    ],
+                  ),
+                  child: const Text(
+                    "E",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
         title: Text(
           item.displayName,
           style: const TextStyle(
-            color: Colors.amber,
+            color: Colors.white,
             fontWeight: FontWeight.bold,
           ),
         ),
-        subtitle: Text(
-          "Chance: ${(chance * 100).toInt()}% | Custo: ${custo}g",
-          style: const TextStyle(color: Colors.white54, fontSize: 11),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 4),
+            Text(
+              "${statData['label']}: ${statData['value']} ➔ ${statData['next']}",
+              style: TextStyle(
+                color: statData['color'],
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
+            ),
+            Text(
+              "Custo: ${custo}g",
+              style: const TextStyle(color: Colors.white38, fontSize: 11),
+            ),
+          ],
         ),
         trailing: ElevatedButton(
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF8B0000),
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
           ),
           onPressed: () => _upgradeItem(item),
           child: const Text(
             "FORJAR",
-            style: TextStyle(fontSize: 10, color: Colors.white),
+            style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
           ),
         ),
       ),
     );
   }
 
-  List<Item> _getUpgradeableItems() {
-    final List<Item> list = [];
-    list.addAll(
-      widget.hero.warehouse.where(
-        (i) => i.type != ItemType.material && i.type != ItemType.potion,
-      ),
-    );
-    final equipped = [
+  // --- AUXILIARES ---
+
+  List<Item> _getSortedItems() {
+    // 1. Pegar todos os slots equipados que não são nulos
+    final List<Item> equipped = [
       widget.hero.equippedWeapon,
       widget.hero.equippedArmor,
       widget.hero.equippedHelmet,
@@ -209,19 +264,42 @@ class _BlacksmithScreenState extends State<BlacksmithScreen> {
       widget.hero.equippedNecklace,
       widget.hero.equippedRing,
       widget.hero.equippedRing2,
-    ];
-    for (var item in equipped) {
-      if (item != null) list.add(item);
-    }
-    return list;
+    ].whereType<Item>().toList();
+
+    // 2. Pegar itens do armazém (excluindo consumíveis/materiais)
+    final List<Item> warehouse = widget.hero.warehouse
+        .where((i) => i.type != ItemType.potion && i.type != ItemType.material)
+        .toList();
+
+    // 3. Unir e remover duplicatas de referência
+    final Set<Item> allUnique = {...equipped, ...warehouse};
+
+    return allUnique.toList();
   }
 
-  Widget _buildEmptyState() => const Center(
-    child: Text("Nada para forjar...", style: TextStyle(color: Colors.white24)),
-  );
+  bool _isItemEquipped(Item item) {
+    return [
+      widget.hero.equippedWeapon,
+      widget.hero.equippedArmor,
+      widget.hero.equippedHelmet,
+      widget.hero.equippedBoots,
+      widget.hero.equippedNecklace,
+      widget.hero.equippedRing,
+      widget.hero.equippedRing2,
+    ].contains(item);
+  }
+
+  Widget _buildEmptyState() {
+    return const Center(
+      child: Text(
+        "Nenhum item aprimorável encontrado...",
+        style: TextStyle(color: Colors.white24),
+      ),
+    );
+  }
 }
 
-// --- CLASSE DA ANIMAÇÃO (COLOQUE NO FINAL DO ARQUIVO) ---
+// --- CLASSE DA ANIMAÇÃO FLUTUANTE ---
 
 class _FloatingTextAnimation extends StatefulWidget {
   final String text;
@@ -248,21 +326,24 @@ class _FloatingTextAnimationState extends State<_FloatingTextAnimation>
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 1000),
       vsync: this,
     );
 
-    // Se for sucesso (+1), sobe. Se for falha (-1), desce.
-    double beginOffset =
-        widget.text.contains("-") || widget.text.contains("FALHA") ? -20 : 20;
+    // Se for negativo ou falha, desce. Se for positivo, sobe.
+    double direction =
+        (widget.text.contains("-") || widget.text.contains("FALHA")) ? 40 : -40;
 
     _offsetAnimation = Tween<double>(
       begin: 0,
-      end: -beginOffset,
+      end: direction,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
-    _opacityAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
-      CurvedAnimation(parent: _controller, curve: const Interval(0.5, 1.0)),
-    );
+
+    _opacityAnimation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0), weight: 20),
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.0), weight: 50),
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.0), weight: 30),
+    ]).animate(_controller);
 
     _controller.forward().then((_) => widget.onComplete());
   }
@@ -270,14 +351,15 @@ class _FloatingTextAnimationState extends State<_FloatingTextAnimation>
   @override
   void dispose() {
     _controller.dispose();
-    super.initState();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Positioned(
-      left: MediaQuery.of(context).size.width / 2 - 50, // Centralizado
-      top: MediaQuery.of(context).size.height / 2,
+      left: 0,
+      right: 0,
+      top: MediaQuery.of(context).size.height * 0.4,
       child: AnimatedBuilder(
         animation: _controller,
         builder: (context, child) {
@@ -285,17 +367,23 @@ class _FloatingTextAnimationState extends State<_FloatingTextAnimation>
             offset: Offset(0, _offsetAnimation.value),
             child: Opacity(
               opacity: _opacityAnimation.value,
-              child: Material(
-                color: Colors.transparent,
-                child: Text(
-                  widget.text,
-                  style: TextStyle(
-                    color: widget.color,
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    shadows: const [
-                      Shadow(blurRadius: 10, color: Colors.black),
-                    ],
+              child: Center(
+                child: Material(
+                  color: Colors.transparent,
+                  child: Text(
+                    widget.text,
+                    style: TextStyle(
+                      color: widget.color,
+                      fontSize: 40,
+                      fontWeight: FontWeight.bold,
+                      shadows: const [
+                        Shadow(
+                          blurRadius: 8,
+                          color: Colors.black,
+                          offset: Offset(2, 2),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
