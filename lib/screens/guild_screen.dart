@@ -100,6 +100,7 @@ class _GuildScreenState extends State<GuildScreen> {
 
     // Remover os itens do warehouse do herói
     setState(() {
+      widget.hero.missoesCompletadas++;
       int removidos = 0;
       for (int i = widget.hero.warehouse.length - 1; i >= 0; i--) {
         var item = widget.hero.warehouse[i];
@@ -127,6 +128,7 @@ class _GuildScreenState extends State<GuildScreen> {
       }
 
       widget.onUpdate();
+      widget.hero.saveToSupabase();
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -358,6 +360,24 @@ class _GuildScreenState extends State<GuildScreen> {
                     ),
                   ],
                 ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    "Concluídas: ${widget.hero.missoesCompletadas}",
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
                 const Divider(color: Colors.amber, thickness: 1, height: 16),
 
                 // Lista rolável de missões contendo Ratos, Abelhas e Lobos
@@ -574,7 +594,7 @@ class _GuildScreenState extends State<GuildScreen> {
                     Icon(Icons.gavel, color: Colors.greenAccent, size: 24),
                     SizedBox(width: 8),
                     Text(
-                      "BALCÃO DE TROCAS",
+                      "BALCÃO DE TROCAS - INATIVO",
                       style: TextStyle(
                         color: Colors.greenAccent,
                         fontWeight: FontWeight.bold,

@@ -179,6 +179,7 @@ class Monster {
 }
 
 class HeroModel {
+  int missoesCompletadas;
   String? id;
   String name;
   Raca raca;
@@ -208,6 +209,7 @@ class HeroModel {
   List<Quest> activeQuests = [];
 
   HeroModel({
+    this.missoesCompletadas = 0,
     this.id,
     this.name = "Guerreiro",
     this.raca = Raca.humano,
@@ -243,6 +245,7 @@ class HeroModel {
       'max_tower_floor': maxTowerFloor,
       'quest_progress': questProgress,
       'current_quest_id': currentQuestId,
+      'missoes_completadas': missoesCompletadas,
       'warehouse': warehouse.map((i) => i.toMap()).toList(),
       'equipped_weapon': equippedWeapon?.toMap(),
       'equipped_armor': equippedArmor?.toMap(),
@@ -272,6 +275,7 @@ class HeroModel {
       maxTowerFloor: map['max_tower_floor'] ?? 0,
       questProgress: map['quest_progress'] ?? 0,
       currentQuestId: map['current_quest_id'],
+      missoesCompletadas: map['missoes_completadas'] ?? 0,
     );
 
     if (map['warehouse'] != null) {
