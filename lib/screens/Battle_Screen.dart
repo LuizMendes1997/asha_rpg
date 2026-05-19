@@ -54,7 +54,41 @@ class _BattleScreenState extends State<BattleScreen> {
     }
   }
 
-  // --- LÓGICA DE TURNO COMPLETA ---
+  // 🛡️ MÉTODOS AUXILIARES PARA O SISTEMA ELEMENTAL
+
+  // Retorna o elemento contra o qual o elemento atual é forte
+  Elemento _obterVantagem(Elemento elem) {
+    switch (elem) {
+      case Elemento.fogo:
+        return Elemento.vento;
+      case Elemento.vento:
+        return Elemento.terra;
+      case Elemento.terra:
+        return Elemento.agua;
+      case Elemento.agua:
+        return Elemento.fogo;
+      default:
+        return Elemento.nenhum;
+    }
+  }
+
+  // Retorna uma string estilizada para enriquecer o Battle Log
+  String _obterTagElemental(Elemento elem) {
+    switch (elem) {
+      case Elemento.fogo:
+        return "🔥[FOGO]";
+      case Elemento.vento:
+        return "💨[VENTO]";
+      case Elemento.terra:
+        return "🪨[TERRA]";
+      case Elemento.agua:
+        return "💧[ÁGUA]";
+      default:
+        return "";
+    }
+  }
+
+  // --- LÓGICA DE TURNO COMPLETA COM CÁLCULO ELEMENTAL ---
   Future<void> _processTurn() async {
     if (_isAttacking) return;
 
@@ -73,8 +107,45 @@ class _BattleScreenState extends State<BattleScreen> {
             "${widget.enemies[currentEnemyIndex].name} desviou do seu ataque!";
         _triggerMonsterEvade(currentEnemyIndex);
       } else {
-        int damageToMonster =
-            widget.hero.totalStr - widget.enemies[currentEnemyIndex].def;
+        Monster Alvo = widget.enemies[currentEnemyIndex];
+
+        // Base de cálculo do dano físico bruto
+        double danoBase = (widget.hero.totalStr - Alvo.def).toDouble();
+        if (danoBase < 1) danoBase = 1;
+
+        // Verifica se o herói ativou algum bônus elemental (Mínimo de 3 peças equipadas)
+        Map<Elemento, int> bonusAtivos = widget.hero
+            .obterBonusElementaisAtivos();
+
+        double modificadorElemental = 1.0;
+        String logEfeitoElemental = "";
+
+        if (bonusAtivos.isNotEmpty) {
+          // O herói assume a propriedade do seu elemento predominante ativo
+          Elemento elementoHeroi = bonusAtivos.keys.first;
+          int quantidadePecas = bonusAtivos[elementoHeroi]!;
+
+          // Aplica o bônus de 5% por peça nativa do set
+          danoBase += danoBase * (quantidadePecas / 100);
+
+          // ⚖️ SISTEMA COMBATENTE DA RODA ELEMENTAL
+          if (Alvo.elemento != Elemento.nenhum) {
+            if (_obterVantagem(elementoHeroi) == Alvo.elemento) {
+              // Vantagem total: +25% de Dano Real
+              modificadorElemental = 1.25;
+              logEfeitoElemental =
+                  "\n✨ Ataque Eficaz! O poder de ${_obterTagElemental(elementoHeroi)} sobrepujou o ${_obterTagElemental(Alvo.elemento)} do inimigo! (+25%)";
+            } else if (_obterVantagem(Alvo.elemento) == elementoHeroi) {
+              // Desvantagem total: -25% de Dano Real
+              modificadorElemental = 0.75;
+              logEfeitoElemental =
+                  "\n📉 Ataque Ineficaz... O elemento ${_obterTagElemental(Alvo.elemento)} do inimigo resistiu ao seu ${_obterTagElemental(elementoHeroi)}! (-25%)";
+            }
+          }
+        }
+
+        // Consolidação do cálculo final de dano
+        int damageToMonster = (danoBase * modificadorElemental).toInt();
         if (damageToMonster < 1) damageToMonster = 1;
 
         _activeDamagesOnMonsters.add(
@@ -86,8 +157,11 @@ class _BattleScreenState extends State<BattleScreen> {
         );
 
         enemiesHP[currentEnemyIndex] -= damageToMonster;
+
+        // Log customizado com as informações elementais ocorridas no cálculo
         battleLog =
-            "Você atacou ${widget.enemies[currentEnemyIndex].name} e causou $damageToMonster de dano!";
+            "Você atacou ${Alvo.name} e causou $damageToMonster de dano!$logEfeitoElemental";
+
         if (enemiesHP[currentEnemyIndex] <= 0) currentEnemyIndex++;
       }
       _slashTargetIndex = null;
@@ -155,8 +229,9 @@ class _BattleScreenState extends State<BattleScreen> {
             quest.currentKillCount++;
             String msg =
                 "${quest.title}: ${quest.currentKillCount}/${quest.requiredKillCount}";
-            if (!questProgressMessages.contains(msg))
+            if (!questProgressMessages.contains(msg)) {
               questProgressMessages.add(msg);
+            }
           }
         }
       }
@@ -215,6 +290,7 @@ class _BattleScreenState extends State<BattleScreen> {
               const SizedBox(height: 5),
               Wrap(
                 spacing: 8,
+                runSpacing: 8,
                 children: allLoot
                     .map((i) => Image.asset(i.iconPath, width: 30, height: 30))
                     .toList(),
@@ -339,9 +415,10 @@ class _BattleScreenState extends State<BattleScreen> {
                     ),
                   ),
 
-                  // Log
+                  // Log de Batalha Expandido
                   Container(
-                    height: 80,
+                    height:
+                        100, // Leve aumento para comportar os logs elementais perfeitamente
                     width: double.infinity,
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
@@ -361,7 +438,7 @@ class _BattleScreenState extends State<BattleScreen> {
                   ),
                   const SizedBox(height: 15),
 
-                  // Controles
+                  // Controles do Jogador
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(

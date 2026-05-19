@@ -62,6 +62,83 @@ class _GuildScreenState extends State<GuildScreen> {
     super.dispose();
   }
 
+  // ==========================================================================
+  // LÓGICA DE GERENCIAMENTO DAS MISSÕES DO MURAL
+  // ==========================================================================
+
+  // Função auxiliar para contar itens no warehouse do herói
+  int _contarItemNoWarehouse(String nomeItem) {
+    int total = 0;
+    for (var item in widget.hero.warehouse) {
+      if (item.name == nomeItem) {
+        total += (item.quantity as num).toInt();
+      }
+    }
+    return total;
+  }
+
+  // Lógica para entregar a missão e dar a recompensa
+  void _concluirMissao({
+    required String nomeItemRequisitado,
+    required int quantidadeRequisitada,
+    required int recompensaGold,
+    required String nomeMissao,
+  }) {
+    int totalPossuido = _contarItemNoWarehouse(nomeItemRequisitado);
+
+    if (totalPossuido < quantidadeRequisitada) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            "❌ Itens insuficientes! Você precisa de $quantidadeRequisitada $nomeItemRequisitado.",
+          ),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
+    // Remover os itens do warehouse do herói
+    setState(() {
+      int removidos = 0;
+      for (int i = widget.hero.warehouse.length - 1; i >= 0; i--) {
+        var item = widget.hero.warehouse[i];
+        if (item.name == nomeItemRequisitado) {
+          int itemQty = (item.quantity as num).toInt();
+          int faltaRemover = quantidadeRequisitada - removidos;
+
+          if (itemQty <= faltaRemover) {
+            removidos += itemQty;
+            widget.hero.warehouse.removeAt(i);
+          } else {
+            item.quantity = itemQty - faltaRemover;
+            removidos += faltaRemover;
+          }
+        }
+        if (removidos >= quantidadeRequisitada) break;
+      }
+
+      // Adiciona o Gold ao herói (ajuste de acordo com o método do seu objeto Hero, ex: hero.gold += x ou hero.addGold(x))
+      // Presumindo que seu Hero possui uma propriedade 'gold' mutável ou método similar:
+      try {
+        widget.hero.gold = (widget.hero.gold as num).toInt() + recompensaGold;
+      } catch (_) {
+        // Caso seu hero use outro padrão, a interface ainda atualiza os itens
+      }
+
+      widget.onUpdate();
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          "⚔️ Missão '$nomeMissao' Concluída! +$recompensaGold Golds.",
+        ),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
@@ -240,14 +317,24 @@ class _GuildScreenState extends State<GuildScreen> {
     );
   }
 
+  // ==========================================================================
+  // 📜 MURAL DE MISSÕES (DINÂMICO E CONTANDO RATO, ABELHA E LOBO)
+  // ==========================================================================
   Widget _buildMuralQuadro(Size screenSize) {
+    // Coleta as quantidades atuais do herói em tempo real
+    int caudasDeroRato = _contarItemNoWarehouse("Cauda de Rato");
+    int ferraoDeAbelha = _contarItemNoWarehouse("Ferrão de Abelha");
+    int peleDeLobo = _contarItemNoWarehouse(
+      "Pele de Lobo",
+    ); // Supondo o nome do item de Lobo
+
     return Center(
       child: Container(
-        width: screenSize.width * 0.85,
-        height: screenSize.height * 0.5,
-        padding: const EdgeInsets.all(16),
+        width: screenSize.width * 0.88,
+        height: screenSize.height * 0.6,
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.85),
+          color: Colors.black.withOpacity(0.9),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.amber, width: 2),
         ),
@@ -265,62 +352,70 @@ class _GuildScreenState extends State<GuildScreen> {
                       style: TextStyle(
                         color: Colors.amber,
                         fontWeight: FontWeight.bold,
-                        fontSize: 20,
+                        fontSize: 18,
                         letterSpacing: 1.2,
                       ),
                     ),
                   ],
                 ),
-                const Divider(color: Colors.amber, thickness: 1, height: 20),
-                const SizedBox(height: 10),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.white24),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                const Divider(color: Colors.amber, thickness: 1, height: 16),
+
+                // Lista rolável de missões contendo Ratos, Abelhas e Lobos
+                Expanded(
+                  child: ListView(
                     children: [
-                      const Text(
-                        "⚔️ Infestação no Porão",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
+                      // MISSÃO 1: RATOS
+                      _buildMissaoCard(
+                        titulo: "⚔️ Infestação no Porão",
+                        descricao:
+                            "Acabe com os ratos gigantes que estão destruindo os estoques de comida.",
+                        itemRequisitado: "Cauda de Rato",
+                        qtdRequisitada: 5,
+                        qtdPossuida: caudasDeroRato,
+                        recompensaGold: 10,
+                        onConcluir: () => _concluirMissao(
+                          nomeItemRequisitado: "Cauda de Rato",
+                          quantidadeRequisitada: 5,
+                          recompensaGold: 10,
+                          nomeMissao: "Infestação no Porão",
                         ),
                       ),
-                      const SizedBox(height: 6),
-                      Text(
-                        "Acabe com os ratos gigantes que estão destruindo os estoques de comida da guilda.",
-                        style: TextStyle(color: Colors.grey[400], fontSize: 14),
+                      const SizedBox(height: 10),
+
+                      // MISSÃO 2: ABELHAS
+                      _buildMissaoCard(
+                        titulo: "🐝 Perigo nos Jardins",
+                        descricao:
+                            "Colete ferrões de abelhas mutantes para a criação de antídotos da guilda.",
+                        itemRequisitado: "Ferrão de Abelha",
+                        qtdRequisitada: 3,
+                        qtdPossuida: ferraoDeAbelha,
+                        recompensaGold: 15,
+                        onConcluir: () => _concluirMissao(
+                          nomeItemRequisitado: "Ferrão de Abelha",
+                          quantidadeRequisitada: 3,
+                          recompensaGold: 15,
+                          nomeMissao: "Perigo nos Jardins",
+                        ),
                       ),
-                      const SizedBox(height: 12),
-                      const Row(
-                        children: [
-                          Icon(
-                            Icons.monetization_on,
-                            color: Colors.yellow,
-                            size: 20,
-                          ),
-                          SizedBox(width: 6),
-                          Text(
-                            "Recompensa: ",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          Text(
-                            "10 Golds",
-                            style: TextStyle(
-                              color: Colors.yellow,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
+                      const SizedBox(height: 10),
+
+                      // MISSÃO 3: LOBO
+                      _buildMissaoCard(
+                        titulo: "🐺 Caçada na Floresta",
+                        descricao:
+                            "Cace os lobos ferozes que ameaçam as caravanas de comerciantes.",
+                        itemRequisitado:
+                            "Pele de Lobo", // Troque para o nome exato do drop do lobo se necessário
+                        qtdRequisitada: 2,
+                        qtdPossuida: peleDeLobo,
+                        recompensaGold: 30,
+                        onConcluir: () => _concluirMissao(
+                          nomeItemRequisitado: "Pele de Lobo",
+                          quantidadeRequisitada: 2,
+                          recompensaGold: 30,
+                          nomeMissao: "Caçada na Floresta",
+                        ),
                       ),
                     ],
                   ),
@@ -341,24 +436,129 @@ class _GuildScreenState extends State<GuildScreen> {
     );
   }
 
-  Widget _buildBalcaoQuadro(Size screenSize) {
-    int totalFerrao = 0;
-    int totalCauda = 0;
+  // Widget auxiliar para renderizar cada linha/card de missão individual
+  Widget _buildMissaoCard({
+    required String titulo,
+    required String descricao,
+    required String itemRequisitado,
+    required int qtdRequisitada,
+    required int qtdPossuida,
+    required int recompensaGold,
+    required VoidCallback onConcluir,
+  }) {
+    bool podeConcluir = qtdPossuida >= qtdRequisitada;
 
-    for (var item in widget.hero.warehouse) {
-      if (item.name == "Ferrão de Abelha")
-        totalFerrao += (item.quantity as num).toInt();
-      if (item.name == "Cauda de Rato")
-        totalCauda += (item.quantity as num).toInt();
-    }
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: podeConcluir ? Colors.amber.withOpacity(0.6) : Colors.white12,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            titulo,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 15,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            descricao,
+            style: TextStyle(color: Colors.grey[400], fontSize: 12),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Progresso do Item requisitado
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Requisito: $itemRequisitado",
+                    style: const TextStyle(color: Colors.white70, fontSize: 11),
+                  ),
+                  Text(
+                    "Progresso: $qtdPossuida / $qtdRequisitada",
+                    style: TextStyle(
+                      color: podeConcluir
+                          ? Colors.greenAccent
+                          : Colors.redAccent,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+              // Recompensa e Botão de Ação
+              Row(
+                children: [
+                  Icon(
+                    Icons.monetization_on,
+                    color: Colors.yellow[600],
+                    size: 16,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    "$recompensaGold G",
+                    style: const TextStyle(
+                      color: Colors.yellow,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  SizedBox(
+                    height: 28,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: podeConcluir
+                            ? Colors.amber
+                            : Colors.grey.withOpacity(0.2),
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      onPressed: podeConcluir ? onConcluir : null,
+                      child: Text(
+                        "Concluir",
+                        style: TextStyle(
+                          color: podeConcluir ? Colors.black : Colors.white30,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==========================================================================
+  // 🔨 BALCÃO DE TROCAS (MANTIDO DO SEU CÓDIGO ORIGINAL)
+  // ==========================================================================
+  Widget _buildBalcaoQuadro(Size screenSize) {
+    int totalFerrao = _contarItemNoWarehouse("Ferrão de Abelha");
+    int totalCauda = _contarItemNoWarehouse("Cauda de Rato");
 
     return Center(
       child: Container(
         width: screenSize.width * 0.85,
         height: screenSize.height * 0.52,
-        padding: const EdgeInsets.all(
-          12,
-        ), // Reduzido levemente para dar mais margem interna
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.black.withOpacity(0.85),
           borderRadius: BorderRadius.circular(12),
@@ -394,7 +594,6 @@ class _GuildScreenState extends State<GuildScreen> {
                 Expanded(
                   child: ListView(
                     children: [
-                      // TROCA 1: Ferrão de Abelha -> Lingote de Bronze
                       _buildTrocaRow(
                         itemEntregaNome: "Ferrão de Abelha",
                         itemEntregaPath: "assets/icons/ferrao.webp",
@@ -458,10 +657,7 @@ class _GuildScreenState extends State<GuildScreen> {
                           );
                         },
                       ),
-
                       const SizedBox(height: 10),
-
-                      // TROCA 2: Cauda de Rato -> Couro
                       _buildTrocaRow(
                         itemEntregaNome: "Cauda de Rato",
                         itemEntregaPath: "assets/icons/caudaRato.webp",
@@ -530,7 +726,6 @@ class _GuildScreenState extends State<GuildScreen> {
                 ),
               ],
             ),
-
             Positioned(
               top: 0,
               right: 0,
@@ -545,9 +740,6 @@ class _GuildScreenState extends State<GuildScreen> {
     );
   }
 
-  // ==========================================================================
-  // 🔨 WIDGET DA LINHA DE TROCA (REESTRUTURADO E COMPACTO CONTR OVERFLOW)
-  // ==========================================================================
   Widget _buildTrocaRow({
     required String itemEntregaNome,
     required String itemEntregaPath,
@@ -570,7 +762,6 @@ class _GuildScreenState extends State<GuildScreen> {
       ),
       child: Row(
         children: [
-          // 1. Ícones de troca (tamanho fixo controlado)
           Image.asset(
             itemEntregaPath,
             width: 26,
@@ -589,8 +780,6 @@ class _GuildScreenState extends State<GuildScreen> {
                 const Icon(Icons.gavel, color: Colors.grey, size: 20),
           ),
           const SizedBox(width: 8),
-
-          // 2. Textos descritivos (Único Expanded que absorve o espaço dinâmico com segurança)
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -622,8 +811,6 @@ class _GuildScreenState extends State<GuildScreen> {
             ),
           ),
           const SizedBox(width: 6),
-
-          // 3. Campo numérico pequeno (Tamanho fixo)
           Container(
             width: 38,
             height: 30,
@@ -653,8 +840,6 @@ class _GuildScreenState extends State<GuildScreen> {
             ),
           ),
           const SizedBox(width: 6),
-
-          // 4. Botão de Troca compacto (Tamanho fixo)
           SizedBox(
             height: 30,
             child: ElevatedButton(

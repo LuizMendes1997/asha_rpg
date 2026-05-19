@@ -8,6 +8,7 @@ class MonsterData {
     atk: 3,
     def: 0,
     expValue: 5,
+    elemento: Elemento.vento, // Voa, logo é Vento
     imagePath: 'assets/monsters/abelha.webp',
   );
 
@@ -17,6 +18,7 @@ class MonsterData {
     atk: 6,
     def: 2,
     expValue: 15,
+    elemento: Elemento.terra, // Rasteja na Terra
     imagePath: 'assets/monsters/cobra.webp',
   );
 
@@ -26,8 +28,10 @@ class MonsterData {
     atk: 4,
     def: 1,
     expValue: 8,
+    elemento: Elemento.terra,
     imagePath: 'assets/monsters/rato.webp',
   );
+
   static Monster get aguiaReal => Monster(
     name: "Aguia Real",
     hp: 100,
@@ -35,8 +39,10 @@ class MonsterData {
     def: 4,
     expValue: 40,
     isBoss: true,
+    elemento: Elemento.vento,
     imagePath: 'assets/monsters/aguiareal.webp',
   );
+
   // --- MONSTROS DA FLORESTA ---
   static Monster get goblin => Monster(
     name: "Goblin",
@@ -44,6 +50,7 @@ class MonsterData {
     atk: 15,
     def: 7,
     expValue: 25,
+    elemento: Elemento.terra,
     imagePath: 'assets/monsters/goblin.webp',
   );
 
@@ -53,6 +60,7 @@ class MonsterData {
     atk: 18,
     def: 8,
     expValue: 45,
+    elemento: Elemento.vento,
     imagePath: 'assets/monsters/lobo.webp',
   );
 
@@ -62,6 +70,7 @@ class MonsterData {
     atk: 12,
     def: 5,
     expValue: 20,
+    elemento: Elemento.agua, // Gosma líquida
     imagePath: 'assets/monsters/slime.webp',
   );
 
@@ -72,9 +81,11 @@ class MonsterData {
     def: 12,
     expValue: 80,
     isBoss: true,
+    elemento: Elemento.terra,
     imagePath: 'assets/monsters/aranha.webp',
   );
 
+  // --- ACAMPAMENTO DE BANDIDOS (Temática de Fogo/Brutos) ---
   static Monster get assasino => Monster(
     name: "Assasino",
     hp: 120,
@@ -82,8 +93,10 @@ class MonsterData {
     def: 15,
     expValue: 40,
     isBoss: true,
+    elemento: Elemento.fogo,
     imagePath: 'assets/monsters/assasino.webp',
   );
+
   static Monster get acougueiro => Monster(
     name: "Acougueiro",
     hp: 180,
@@ -91,8 +104,10 @@ class MonsterData {
     def: 20,
     expValue: 50,
     isBoss: true,
+    elemento: Elemento.fogo,
     imagePath: 'assets/monsters/acougueiro.webp',
   );
+
   static Monster get viceLider => Monster(
     name: "Vice Lider",
     hp: 250,
@@ -100,8 +115,10 @@ class MonsterData {
     def: 25,
     expValue: 75,
     isBoss: true,
+    elemento: Elemento.fogo,
     imagePath: 'assets/monsters/vicelider.webp',
   );
+
   static Monster get liderBandido => Monster(
     name: "Lider Bandido",
     hp: 450,
@@ -109,26 +126,19 @@ class MonsterData {
     def: 35,
     expValue: 150,
     isBoss: true,
+    elemento: Elemento.fogo,
     imagePath: 'assets/monsters/liderbandido.webp',
   );
+
+  // --- LAGOA ENCANTADA (Temática Mística e Água) ---
   static Monster get driade => Monster(
     name: "Driade",
     hp: 350,
     atk: 70,
     def: 50,
     expValue: 120,
-    isBoss: false,
+    elemento: Elemento.terra, // Natureza/Árvore
     imagePath: 'assets/monsters/driade.webp',
-  );
-
-  static Monster get leviata => Monster(
-    name: "Leviata",
-    hp: 1200,
-    atk: 120,
-    def: 80,
-    expValue: 300,
-    isBoss: true,
-    imagePath: 'assets/monsters/leviata.webp',
   );
 
   static Monster get verme => Monster(
@@ -137,7 +147,7 @@ class MonsterData {
     atk: 55,
     def: 40,
     expValue: 90,
-    isBoss: false,
+    elemento: Elemento.terra,
     imagePath: 'assets/monsters/verme.webp',
   );
 
@@ -147,7 +157,18 @@ class MonsterData {
     atk: 85,
     def: 60,
     expValue: 140,
-    isBoss: false,
+    elemento: Elemento.agua,
     imagePath: 'assets/monsters/tritao.webp',
+  );
+
+  static Monster get leviata => Monster(
+    name: "Leviata",
+    hp: 1200,
+    atk: 120,
+    def: 80,
+    expValue: 300,
+    isBoss: true,
+    elemento: Elemento.agua, // Chefe supremo dos mares
+    imagePath: 'assets/monsters/leviata.webp',
   );
 }

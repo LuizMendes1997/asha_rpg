@@ -15,6 +15,45 @@ class InventoryScreen extends StatefulWidget {
 }
 
 class _InventoryScreenState extends State<InventoryScreen> {
+  // 🎨 MAPEAMENTO DE CORES DOS ELEMENTOS
+  Color _obterCorElemental(Elemento elemento) {
+    switch (elemento) {
+      case Elemento.fogo:
+        return Colors.redAccent;
+      case Elemento.agua:
+        return Colors.blueAccent;
+      case Elemento.terra:
+        return Colors.orange[900]!; // Um tom marrom/terroso bem destacado
+      case Elemento.vento:
+        return Colors
+            .cyanAccent; // Azul ciano/prata brilhante para destacar o vento
+      default:
+        return Colors.transparent;
+    }
+  }
+
+  // 📝 WIDGET INDICADOR ELEMENTAL COMPACTO
+  Widget _buildElementBadge(Elemento elemento) {
+    if (elemento == Elemento.nenhum) return const SizedBox.shrink();
+
+    return Container(
+      width: 12,
+      height: 12,
+      decoration: BoxDecoration(
+        color: _obterCorElemental(elemento),
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: _obterCorElemental(elemento).withOpacity(0.6),
+            blurRadius: 4,
+            spreadRadius: 1,
+          ),
+        ],
+        border: Border.all(color: Colors.black, width: 1.5),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
@@ -37,7 +76,6 @@ class _InventoryScreenState extends State<InventoryScreen> {
     );
   }
 
-  // --- ABA: ARMAZÉM (Fundo inventario.webp) ---
   Widget _buildWarehouseTab() {
     return Stack(
       children: [
@@ -47,7 +85,6 @@ class _InventoryScreenState extends State<InventoryScreen> {
     );
   }
 
-  // --- ABA: EQUIPADOS (Fundo inventario2.webp) ---
   Widget _buildEquippedTab() {
     return Stack(
       children: [
@@ -57,7 +94,6 @@ class _InventoryScreenState extends State<InventoryScreen> {
     );
   }
 
-  // Widget Utilitário para o Fundo
   Widget _buildBackgroundImage(String path, double opacity) {
     return Opacity(
       opacity: opacity,
@@ -84,17 +120,12 @@ class _InventoryScreenState extends State<InventoryScreen> {
       padding: const EdgeInsets.all(10),
       itemBuilder: (context, index) {
         final item = widget.hero.warehouse[index];
-
-        // 1. REGRA DE EQUIPAMENTO: Apenas itens que NÃO são materiais ou poções
         bool canEquip =
             item.type != ItemType.material && item.type != ItemType.potion;
-
-        // 2. REGRA DE QUANTIDADE (TRAVA):
-        // Só exibe o multiplicador "xN" se o item for stackable E a quantidade for maior que 1
         bool showQuantity = item.isStackable && item.quantity > 1;
 
         return Card(
-          color: Colors.grey[900]?.withOpacity(0.7), // Fundo semi-transparente
+          color: Colors.grey[900]?.withOpacity(0.7),
           margin: const EdgeInsets.only(bottom: 8),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
@@ -104,14 +135,25 @@ class _InventoryScreenState extends State<InventoryScreen> {
             ),
           ),
           child: ListTile(
-            leading: SizedBox(
-              width: 32,
-              height: 32,
-              child: Image.asset(
-                item.iconPath,
-                filterQuality: FilterQuality.none, // Mantém o Pixel Art nítido
-                fit: BoxFit.contain,
-              ),
+            // Ícone do item com o distintivo rúnico elemental no canto inferior direito
+            leading: Stack(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  padding: const EdgeInsets.all(2),
+                  child: Image.asset(
+                    item.iconPath,
+                    filterQuality: FilterQuality.none,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: _buildElementBadge(item.elemento),
+                ),
+              ],
             ),
             title: Row(
               children: [
@@ -285,8 +327,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                 "ANEL 2",
                 widget.hero.equippedRing2,
                 ItemType.ring,
-                isAnel2:
-                    true, // Adicione uma lógica para identificar que é o slot 2
+                isAnel2: true,
               ),
             ],
           ),
@@ -346,10 +387,20 @@ class _InventoryScreenState extends State<InventoryScreen> {
                     ),
                   ),
           ),
+
+          // 🔮 MOLDE REDONDO NO CANTO DIREITO INFERIOR DO SLOT DO EQUIPAMENTO
+          if (item != null)
+            Positioned(
+              right: 4,
+              bottom: 4,
+              child: _buildElementBadge(item.elemento),
+            ),
+
+          // Nível de Upgrade (+N) deslocado um pouco para a esquerda para não encavalar com o Elemento
           if (item != null && item.level > 0)
             Positioned(
-              right: 2,
-              bottom: 2,
+              left: 4,
+              bottom: 4,
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                 decoration: BoxDecoration(
@@ -361,7 +412,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                   "+${item.level}",
                   style: const TextStyle(
                     color: Colors.amber,
-                    fontSize: 9,
+                    fontSize: 8,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

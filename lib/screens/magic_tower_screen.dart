@@ -50,6 +50,7 @@ class _MagicTowerScreenState extends State<MagicTowerScreen> {
       def: (defBase * (1 + currentFloor * 0.1)).toInt(),
       expValue: (10 * scale).toInt() + currentFloor,
       imagePath: _getMonsterImage(currentFloor),
+      elemento: Elemento.agua,
       isBoss: currentFloor % 5 == 0,
     );
 

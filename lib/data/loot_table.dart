@@ -7,25 +7,25 @@ class LootTable {
 
   static List<Item> getDrops(String monsterName) {
     List<Item> droppedItems = [];
+
     if (_random.nextDouble() <= 0.99) {
       Item drop = ItemData.fragmentosDivinos.copy();
-      drop.quantity = 1; // Força ser 1
+      drop.quantity = 1;
       droppedItems.add(drop);
     }
+
     switch (monsterName) {
       // --- MONSTROS DA VILA ---
       case "Abelha Operária":
         if (_random.nextDouble() <= 0.4) {
-          // <--- ABRE BLOCO
           droppedItems.add(ItemData.ferraoAbelha.copy());
-        } // <--- FECHA BLOCO
+        }
         if (_random.nextDouble() <= 0.2) {
           droppedItems.add(ItemData.capuzPano.copy());
         }
         break;
       case "Cobra Venenosa":
         if (_random.nextDouble() <= 0.4) {
-          // <--- ABRE BLOCO
           droppedItems.add(ItemData.sandaliaVelha.copy());
         }
         break;
@@ -71,12 +71,13 @@ class LootTable {
         }
         break;
 
-      case "Aranha de Elite":
+      case "Rainha Aranha": // Ajustado para bater com o nome real do monstro
         droppedItems.add(ItemData.patadeAranha.copy());
         if (_random.nextDouble() <= 0.2) {
           droppedItems.add(ItemData.laminaPrata.copy());
         }
         break;
+
       // --- Acampamento de Bandidos ---
       case "Assasino":
         if (_random.nextDouble() <= 0.2) {
@@ -128,6 +129,9 @@ class LootTable {
         break;
     }
 
-    return droppedItems;
+    // 🌟 A MÁGICA ACONTECE AQUI:
+    // Passa por todos os itens dropados e roda o gerador de elementos.
+    // Materiais e poções ignoram automaticamente essa função por causa da nossa trava de segurança.
+    return droppedItems.map((item) => item.gerarElementoAleatorio()).toList();
   }
 }

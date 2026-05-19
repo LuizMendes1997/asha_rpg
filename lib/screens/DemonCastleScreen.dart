@@ -43,6 +43,7 @@ class _DemonCastleScreenState extends State<DemonCastleScreen> {
       hp: 40 + (currentRoom * 15),
       atk: 5 + (currentRoom * 2),
       def: 2 + currentRoom,
+      elemento: Elemento.agua,
       expValue: 30 * currentRoom,
       imagePath: 'assets/monsters/esqueleto.webp',
       isBoss: currentRoom == totalRooms,

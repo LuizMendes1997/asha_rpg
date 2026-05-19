@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'quest_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -5,6 +6,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 enum Raca { humano, elfo, dragoniano }
 
 enum ItemType { weapon, armor, helmet, boots, necklace, ring, potion, material }
+
+// 🧭 1. NOVO ENUM PARA O SISTEMA ELEMENTAL
+enum Elemento { nenhum, fogo, vento, terra, agua }
 
 class Item {
   final String name;
@@ -18,6 +22,9 @@ class Item {
   final int def;
   final int hpBonus;
 
+  // Atributo elemental adicionado
+  final Elemento elemento;
+
   Item({
     required this.name,
     required this.type,
@@ -29,6 +36,7 @@ class Item {
     this.level = 0,
     this.def = 0,
     this.hpBonus = 0,
+    this.elemento = Elemento.nenhum, // Padrão é nascer sem elemento
   });
 
   Map<String, dynamic> toMap() {
@@ -43,6 +51,7 @@ class Item {
       'level': level,
       'def': def,
       'hpBonus': hpBonus,
+      'elemento': elemento.index, // Salvando o elemento no banco
     };
   }
 
@@ -58,6 +67,7 @@ class Item {
       level: map['level'] ?? 0,
       def: map['def'] ?? 0,
       hpBonus: map['hpBonus'] ?? 0,
+      elemento: Elemento.values[map['elemento'] ?? 0], // Recuperando do banco
     );
   }
 
@@ -106,6 +116,40 @@ class Item {
       quantity: quantity,
       isStackable: isStackable,
       level: level,
+      elemento: elemento,
+    );
+  }
+
+  // 🎰 2. FUNÇÃO DE RNG PARA DROPS DOS MONSTROS
+  // Chama essa função quando o item dropar para colocar o elemento aleatório
+  Item gerarElementoAleatorio() {
+    // Apenas equipamentos (armas, armaduras, anéis, etc.) podem ganhar atributos elementais
+    if (type == ItemType.potion || type == ItemType.material) return this;
+
+    final random = Random();
+    // Sorteia entre Fogo (1), Vento (2), Terra (3) e Água (4)
+    final elementosValidos = [
+      Elemento.fogo,
+      Elemento.vento,
+      Elemento.terra,
+      Elemento.agua,
+    ];
+    final elementoSorteado =
+        elementosValidos[random.nextInt(elementosValidos.length)];
+
+    return Item(
+      name: name,
+      type: type,
+      iconPath: iconPath,
+      power: power,
+      price: price,
+      quantity: quantity,
+      isStackable:
+          false, // Importante: Itens elementais randômicos NÃO devem acumular/misturar no inventário
+      level: level,
+      def: def,
+      hpBonus: hpBonus,
+      elemento: elementoSorteado,
     );
   }
 }
@@ -119,6 +163,9 @@ class Monster {
   final String imagePath;
   final bool isBoss;
 
+  // 👾 3. MONSTROS AGORA POSSUEM UM ELEMENTO FIXO DEFENSOR
+  final Elemento elemento;
+
   Monster({
     required this.name,
     required this.hp,
@@ -126,6 +173,7 @@ class Monster {
     required this.def,
     required this.expValue,
     required this.imagePath,
+    required this.elemento, // Elemento obrigatório na criação do monstro
     this.isBoss = false,
   });
 }
@@ -145,7 +193,6 @@ class HeroModel {
   int nivelLinhagem;
   int totalDoado;
 
-  // --- NOVAS VARIÁVEIS DE PROGRESSO ---
   int maxTowerFloor;
   int questProgress;
   String? currentQuestId;
@@ -174,13 +221,11 @@ class HeroModel {
     this.def = 0,
     this.nivelLinhagem = 1,
     this.totalDoado = 0,
-    // Inicialização dos novos campos
     this.maxTowerFloor = 0,
     this.questProgress = 0,
     this.currentQuestId,
   });
 
-  // --- SERIALIZAÇÃO PARA O SUPABASE ---
   Map<String, dynamic> toMap() {
     return {
       'username': name,
@@ -195,7 +240,6 @@ class HeroModel {
       'def': def,
       'nivel_linhagem': nivelLinhagem,
       'total_doado': totalDoado,
-      // Inclusão no mapa de salvamento
       'max_tower_floor': maxTowerFloor,
       'quest_progress': questProgress,
       'current_quest_id': currentQuestId,
@@ -225,7 +269,6 @@ class HeroModel {
       def: map['def'] ?? 0,
       nivelLinhagem: map['nivel_linhagem'] ?? 1,
       totalDoado: map['total_doado'] ?? 0,
-      // Carregando do banco
       maxTowerFloor: map['max_tower_floor'] ?? 0,
       questProgress: map['quest_progress'] ?? 0,
       currentQuestId: map['current_quest_id'],
@@ -265,6 +308,43 @@ class HeroModel {
     } catch (e) {
       debugPrint("Erro ao salvar dados: $e");
     }
+  }
+
+  // 📊 4. CÉREBRO ELEMENTAL: CALCULA OS BÔNUS ATIVOS DO HERÓI
+  // Retorna um mapa contendo apenas os elementos ativos e seus respectivos acréscimos de dano.
+  // Exemplo de retorno se tiver 4 itens de Fogo: { Elemento.fogo: 20 }
+  Map<Elemento, int> obterBonusElementaisAtivos() {
+    final contagemPecas = <Elemento, int>{};
+
+    // Junta os 7 slots de equipamentos permitidos
+    final equipamentosAtuais = [
+      equippedWeapon,
+      equippedArmor,
+      equippedHelmet,
+      equippedBoots,
+      equippedNecklace,
+      equippedRing,
+      equippedRing2,
+    ];
+
+    // Faz a contagem de peças de cada elemento equipado
+    for (var item in equipamentosAtuais) {
+      if (item != null && item.elemento != Elemento.nenhum) {
+        contagemPecas[item.elemento] = (contagemPecas[item.elemento] ?? 0) + 1;
+      }
+    }
+
+    final bonusAtivados = <Elemento, int>{};
+
+    // Aplica o Ponto de Quebra (Gatilho de 3 peças)
+    contagemPecas.forEach((elemento, quantidade) {
+      if (quantidade >= 3) {
+        // Cada peça ativa vale 5% de bônus direto no ataque
+        bonusAtivados[elemento] = quantidade * 5;
+      }
+    });
+
+    return bonusAtivados;
   }
 
   // --- LÓGICA DO JOGO (GETTERS RESTAURADOS) ---
@@ -331,12 +411,14 @@ class HeroModel {
       (equippedWeapon?.totalPower ?? 0) +
       (equippedRing?.totalPower ?? 0) +
       (equippedRing2?.totalPower ?? 0);
+
   int get totalDef =>
       def +
       bonusDEF +
       (equippedArmor?.totalDef ?? 0) +
       (equippedHelmet?.totalDef ?? 0) +
       (equippedBoots?.totalDef ?? 0);
+
   int get totalMaxHp => maxHp + bonusHP + (equippedArmor?.totalHpBonus ?? 0);
 
   bool get podeAventurar => hp > 0;
@@ -406,11 +488,11 @@ class HeroModel {
         equippedNecklace = item;
         break;
       case ItemType.ring:
-        if (equippedRing == null)
+        if (equippedRing == null) {
           equippedRing = item;
-        else if (equippedRing2 == null)
+        } else if (equippedRing2 == null) {
           equippedRing2 = item;
-        else {
+        } else {
           swap(equippedRing);
           equippedRing = item;
         }
