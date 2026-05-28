@@ -2,8 +2,11 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'quest_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'clan_model.dart';
 
 enum Raca { humano, elfo, dragoniano }
+
+enum Raridade { normal, comum, incomum, raro, epico, lendario }
 
 enum ItemType { weapon, armor, helmet, boots, necklace, ring, potion, material }
 
@@ -11,6 +14,7 @@ enum ItemType { weapon, armor, helmet, boots, necklace, ring, potion, material }
 enum Elemento { nenhum, fogo, vento, terra, agua }
 
 class Item {
+  final Raridade raridade;
   final String name;
   final ItemType type;
   final int power;
@@ -36,7 +40,8 @@ class Item {
     this.level = 0,
     this.def = 0,
     this.hpBonus = 0,
-    this.elemento = Elemento.nenhum, // Padrão é nascer sem elemento
+    this.elemento = Elemento.nenhum,
+    this.raridade = Raridade.normal,
   });
 
   Map<String, dynamic> toMap() {
@@ -51,7 +56,8 @@ class Item {
       'level': level,
       'def': def,
       'hpBonus': hpBonus,
-      'elemento': elemento.index, // Salvando o elemento no banco
+      'elemento': elemento.index,
+      'raridade': raridade.index, // Salvando o elemento no banco
     };
   }
 
@@ -67,13 +73,14 @@ class Item {
       level: map['level'] ?? 0,
       def: map['def'] ?? 0,
       hpBonus: map['hpBonus'] ?? 0,
-      elemento: Elemento.values[map['elemento'] ?? 0], // Recuperando do banco
+      elemento: Elemento.values[map['elemento'] ?? 0],
+      raridade: Raridade.values[map['raridade'] ?? 0], // Recuperando do banco
     );
   }
 
-  int get totalDef => def + ((level - 1) * 2);
-  int get totalHpBonus => hpBonus + ((level - 1) * 5);
-  int get totalPower => power + ((level - 1) * 2);
+  int get totalDef => def + (level * 2);
+  int get totalHpBonus => hpBonus + (level * 5);
+  int get totalPower => power + (level * 2);
   String get displayName => level > 0 ? "$name +$level" : name;
 
   Map<String, dynamic> get mainStat {
@@ -121,13 +128,10 @@ class Item {
   }
 
   // 🎰 2. FUNÇÃO DE RNG PARA DROPS DOS MONSTROS
-  // Chama essa função quando o item dropar para colocar o elemento aleatório
   Item gerarElementoAleatorio() {
-    // Apenas equipamentos (armas, armaduras, anéis, etc.) podem ganhar atributos elementais
     if (type == ItemType.potion || type == ItemType.material) return this;
 
     final random = Random();
-    // Sorteia entre Fogo (1), Vento (2), Terra (3) e Água (4)
     final elementosValidos = [
       Elemento.fogo,
       Elemento.vento,
@@ -144,8 +148,7 @@ class Item {
       power: power,
       price: price,
       quantity: quantity,
-      isStackable:
-          false, // Importante: Itens elementais randômicos NÃO devem acumular/misturar no inventário
+      isStackable: false, // Itens elementais não acumulam
       level: level,
       def: def,
       hpBonus: hpBonus,
@@ -162,8 +165,6 @@ class Monster {
   final int expValue;
   final String imagePath;
   final bool isBoss;
-
-  // 👾 3. MONSTROS AGORA POSSUEM UM ELEMENTO FIXO DEFENSOR
   final Elemento elemento;
 
   Monster({
@@ -173,12 +174,17 @@ class Monster {
     required this.def,
     required this.expValue,
     required this.imagePath,
-    required this.elemento, // Elemento obrigatório na criação do monstro
+    required this.elemento,
     this.isBoss = false,
   });
 }
 
 class HeroModel {
+  // Adicione dentro de HeroModel
+  String? clanId;
+  // Como você não quer mudar muito sua estrutura, vamos deixar o objeto Clan
+  // opcional no HeroModel para facilitar o acesso rápido.
+  Clan? myClan;
   int missoesCompletadas;
   String? id;
   String name;
@@ -197,6 +203,9 @@ class HeroModel {
   int maxTowerFloor;
   int questProgress;
   String? currentQuestId;
+
+  // Nova variável local para armazenar a string formatada que vai pro Supabase
+  String? elementalStats;
 
   List<Item> warehouse = [];
   Item? equippedWeapon;
@@ -226,7 +235,33 @@ class HeroModel {
     this.maxTowerFloor = 0,
     this.questProgress = 0,
     this.currentQuestId,
+    this.elementalStats,
   });
+  // Adicione em HeroModel.dart
+  void fundirItens(Item item1, Item item2) {
+    if (item1.name != item2.name ||
+        item1.raridade != item2.raridade ||
+        item1.elemento != item2.elemento)
+      return;
+    if (item1.raridade == Raridade.lendario) return;
+
+    warehouse.remove(item1);
+    warehouse.remove(item2);
+
+    Item novoItem = Item(
+      name: item1.name,
+      type: item1.type,
+      iconPath: item1.iconPath,
+      raridade: Raridade.values[item1.raridade.index + 1],
+      elemento: item1.elemento,
+      power: (item1.power * 1.5).toInt(),
+      def: (item1.def * 1.5).toInt(),
+      hpBonus: (item1.hpBonus * 1.5).toInt(),
+    );
+
+    warehouse.add(novoItem);
+    saveToSupabase();
+  }
 
   Map<String, dynamic> toMap() {
     return {
@@ -246,6 +281,7 @@ class HeroModel {
       'quest_progress': questProgress,
       'current_quest_id': currentQuestId,
       'missoes_completadas': missoesCompletadas,
+      'elemental_stats': elementalStats, // Adicionado no mapa de persistência
       'warehouse': warehouse.map((i) => i.toMap()).toList(),
       'equipped_weapon': equippedWeapon?.toMap(),
       'equipped_armor': equippedArmor?.toMap(),
@@ -276,6 +312,7 @@ class HeroModel {
       questProgress: map['quest_progress'] ?? 0,
       currentQuestId: map['current_quest_id'],
       missoesCompletadas: map['missoes_completadas'] ?? 0,
+      elementalStats: map['elemental_stats'], // Recuperando do banco
     );
 
     if (map['warehouse'] != null) {
@@ -315,12 +352,9 @@ class HeroModel {
   }
 
   // 📊 4. CÉREBRO ELEMENTAL: CALCULA OS BÔNUS ATIVOS DO HERÓI
-  // Retorna um mapa contendo apenas os elementos ativos e seus respectivos acréscimos de dano.
-  // Exemplo de retorno se tiver 4 itens de Fogo: { Elemento.fogo: 20 }
   Map<Elemento, int> obterBonusElementaisAtivos() {
     final contagemPecas = <Elemento, int>{};
 
-    // Junta os 7 slots de equipamentos permitidos
     final equipamentosAtuais = [
       equippedWeapon,
       equippedArmor,
@@ -331,8 +365,8 @@ class HeroModel {
       equippedRing2,
     ];
 
-    // Faz a contagem de peças de cada elemento equipado
     for (var item in equipamentosAtuais) {
+      // Corrigido aqui: Removido o Elemento.none que não existia no enum
       if (item != null && item.elemento != Elemento.nenhum) {
         contagemPecas[item.elemento] = (contagemPecas[item.elemento] ?? 0) + 1;
       }
@@ -340,15 +374,26 @@ class HeroModel {
 
     final bonusAtivados = <Elemento, int>{};
 
-    // Aplica o Ponto de Quebra (Gatilho de 3 peças)
     contagemPecas.forEach((elemento, quantidade) {
       if (quantidade >= 3) {
-        // Cada peça ativa vale 5% de bônus direto no ataque
         bonusAtivados[elemento] = quantidade * 5;
       }
     });
 
     return bonusAtivados;
+  }
+
+  // 🔄 ATUALIZA O CACHE STRING PARA SALVAR NO BANCO
+  void atualizarCacheElemental() {
+    final bonus = obterBonusElementaisAtivos();
+    if (bonus.isEmpty) {
+      elementalStats = null;
+    } else {
+      // Cria a string no formato "index_elemento:porcentagem,index_elemento:porcentagem"
+      elementalStats = bonus.entries
+          .map((e) => "${e.key.index}:${e.value}")
+          .join(',');
+    }
   }
 
   // --- LÓGICA DO JOGO (GETTERS RESTAURADOS) ---
@@ -506,6 +551,7 @@ class HeroModel {
     }
     warehouse.remove(item);
     calculateStats();
+    atualizarCacheElemental(); // Atualiza a string do cache antes de salvar
     saveToSupabase();
   }
 
@@ -547,6 +593,7 @@ class HeroModel {
     if (removed != null) {
       addItem(removed);
       calculateStats();
+      atualizarCacheElemental(); // Atualiza a string do cache antes de salvar
       saveToSupabase();
     }
   }

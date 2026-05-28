@@ -31,6 +31,7 @@ class _BattleScreenState extends State<BattleScreen> {
   int currentEnemyIndex = 0;
   List<MonsterDamageInfo> _activeDamagesOnMonsters = [];
   List<int> _evadingMonsters = [];
+  String _statusElementalInfo = ""; // Novo: Armazena o status compacto do topo
 
   // Controles de Animação e Delay
   bool _isAttacking = false;
@@ -105,6 +106,7 @@ class _BattleScreenState extends State<BattleScreen> {
       if (monsterEvaded) {
         battleLog =
             "${widget.enemies[currentEnemyIndex].name} desviou do seu ataque!";
+        _statusElementalInfo = ""; // Limpa se errou
         _triggerMonsterEvade(currentEnemyIndex);
       } else {
         Monster Alvo = widget.enemies[currentEnemyIndex];
@@ -130,18 +132,32 @@ class _BattleScreenState extends State<BattleScreen> {
 
           // ⚖️ SISTEMA COMBATENTE DA RODA ELEMENTAL
           if (Alvo.elemento != Elemento.nenhum) {
+            String emojiHeroi = _obterTagElemental(
+              elementoHeroi,
+            ).split('[').first;
+
             if (_obterVantagem(elementoHeroi) == Alvo.elemento) {
               // Vantagem total: +25% de Dano Real
               modificadorElemental = 1.25;
               logEfeitoElemental =
                   "\n✨ Ataque Eficaz! O poder de ${_obterTagElemental(elementoHeroi)} sobrepujou o ${_obterTagElemental(Alvo.elemento)} do inimigo! (+25%)";
+              _statusElementalInfo =
+                  "$emojiHeroi vs ${Alvo.elemento.name.toUpperCase()}: +25%";
             } else if (_obterVantagem(Alvo.elemento) == elementoHeroi) {
               // Desvantagem total: -25% de Dano Real
               modificadorElemental = 0.75;
               logEfeitoElemental =
                   "\n📉 Ataque Ineficaz... O elemento ${_obterTagElemental(Alvo.elemento)} do inimigo resistiu ao seu ${_obterTagElemental(elementoHeroi)}! (-25%)";
+              _statusElementalInfo =
+                  "$emojiHeroi vs ${Alvo.elemento.name.toUpperCase()}: -25%";
+            } else {
+              _statusElementalInfo = "";
             }
+          } else {
+            _statusElementalInfo = "";
           }
+        } else {
+          _statusElementalInfo = "";
         }
 
         // Consolidação do cálculo final de dano
@@ -162,7 +178,11 @@ class _BattleScreenState extends State<BattleScreen> {
         battleLog =
             "Você atacou ${Alvo.name} e causou $damageToMonster de dano!$logEfeitoElemental";
 
-        if (enemiesHP[currentEnemyIndex] <= 0) currentEnemyIndex++;
+        if (enemiesHP[currentEnemyIndex] <= 0) {
+          currentEnemyIndex++;
+          _statusElementalInfo =
+              ""; // Limpa o status temporário quando o monstro morre
+        }
       }
       _slashTargetIndex = null;
     });
@@ -400,6 +420,22 @@ class _BattleScreenState extends State<BattleScreen> {
                       letterSpacing: 3,
                     ),
                   ),
+
+                  // Novo Widget: Exibição compacta do status elemental logo abaixo do título
+                  if (_statusElementalInfo.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 5),
+                      child: Text(
+                        _statusElementalInfo,
+                        style: TextStyle(
+                          color: _statusElementalInfo.contains("-")
+                              ? Colors.redAccent
+                              : Colors.lightBlueAccent,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
 
                   // Arena
                   Expanded(

@@ -4,7 +4,7 @@ import 'village_screen.dart';
 import 'world_map.dart';
 import 'empire_screen.dart';
 import 'inventory_screen.dart';
-import 'ranking_screen.dart'; // Certifique-se de importar a tela que criamos
+import 'online_hub_screen.dart';
 
 class MainShell extends StatefulWidget {
   final HeroModel hero;
@@ -27,7 +27,7 @@ class _MainShellState extends State<MainShell> {
       WorldMap(hero: widget.hero, onUpdate: _refresh),
       InventoryScreen(hero: widget.hero, onUpdate: _refresh),
       EmpireScreen(hero: widget.hero, onUpdate: _refresh),
-      const RankingScreen(), // Nova tela de Ranking
+      OnlineHubScreen(hero: widget.hero, onUpdate: _refresh),
     ];
 
     return Scaffold(
@@ -165,7 +165,7 @@ class _MainShellState extends State<MainShell> {
           const BottomNavigationBarItem(
             icon: Icon(Icons.emoji_events_outlined, size: 26),
             activeIcon: Icon(Icons.emoji_events, size: 28, color: Colors.amber),
-            label: 'Ranking',
+            label: 'Online',
           ),
         ],
       ),

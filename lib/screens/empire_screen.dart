@@ -4,6 +4,7 @@ import '../models/game_state.dart';
 import 'market_screen.dart';
 import 'throne_room.dart';
 import 'blacksmith_screen.dart';
+import 'LojaDoFeiticeiro.dart';
 
 class EmpireScreen extends StatefulWidget {
   final HeroModel hero;
@@ -159,6 +160,19 @@ class _EmpireScreenState extends State<EmpireScreen> {
                   () => _goTo(
                     context,
                     ThroneRoom(hero: widget.hero, onUpdate: widget.onUpdate),
+                  ),
+                ),
+                _empireActionCard(
+                  "Loja De Magia",
+                  "Funda seus equipamento pra magica acontecer",
+                  "assets/icons/trono.webp",
+                  Colors.purpleAccent,
+                  () => _goTo(
+                    context,
+                    LojaDoFeiticeiro(
+                      hero: widget.hero,
+                      onUpdate: widget.onUpdate,
+                    ),
                   ),
                 ),
 
