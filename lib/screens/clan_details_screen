@@ -1,0 +1,158 @@
+import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+class ClanDetailsScreen extends StatefulWidget {
+  final String clanId;
+
+  const ClanDetailsScreen({super.key, required this.clanId});
+
+  @override
+  State<ClanDetailsScreen> createState() => _ClanDetailsScreenState();
+}
+
+class _ClanDetailsScreenState extends State<ClanDetailsScreen> {
+  final _supabase = Supabase.instance.client;
+
+  Future<Map<String, dynamic>> _fetchClanData() async {
+    // 1. Busca os dados do clã
+    final clanData = await _supabase
+        .from('clans')
+        .select()
+        .eq('id', widget.clanId)
+        .single();
+
+    // 2. Busca todos os membros associados a este clã
+    final membersData = await _supabase
+        .from('profiles')
+        .select('id, username, level, raca') // Ajuste os campos conforme seu banco
+        .eq('clan_id', widget.clanId);
+
+    return {
+      'clan': clanData,
+      'members': membersData as List<dynamic>,
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        title: const Text("MURAL DO CLÃ"),
+        backgroundColor: Colors.transparent,
+      ),
+      body: FutureBuilder<Map<String, dynamic>>(
+        future: _fetchClanData(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator(color: Colors.amber));
+          }
+
+          if (snapshot.hasError) {
+            return Center(
+              child: Text("Erro ao carregar o clã: ${snapshot.error}",
+                  style: const TextStyle(color: Colors.redAccent)),
+            );
+          }
+
+          final data = snapshot.data!;
+          final clan = data['clan'];
+          final List<dynamic> members = data['members'];
+          final String leaderId = clan['leader_id'];
+          final int bonusAtk = members.length * 2;
+
+          return Column(
+            children: [
+              // --- CABEÇALHO DO CLÃ ---
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF1A1A1A),
+                  border: Border(bottom: BorderSide(color: Colors.amber, width: 2)),
+                ),
+                child: Row(
+                  children: [
+                    Image.asset(clan['emblema_path'], width: 80, height: 80),
+                    const SizedBox(width: 20),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            clan['name'].toString().toUpperCase(),
+                            style: const TextStyle(
+                                color: Colors.amber,
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            "Bônus de ATK do Clã: +$bonusAtk",
+                            style: const TextStyle(color: Colors.greenAccent, fontSize: 16),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // --- LISTA DE MEMBROS ---
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    "MEMBROS (${members.length})",
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+              
+              Expanded(
+                child: ListView.builder(
+                  itemCount: members.length,
+                  itemBuilder: (context, index) {
+                    final member = members[index];
+                    final isLeader = member['id'] == leaderId;
+
+                    return Card(
+                      color: const Color(0xFF262626),
+                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: isLeader ? Colors.amber : Colors.grey,
+                          child: Icon(
+                            isLeader ? Icons.star : Icons.person,
+                            color: Colors.black,
+                          ),
+                        ),
+                        title: Text(
+                          member['username'] ?? 'Sem Nome',
+                          style: TextStyle(
+                            color: isLeader ? Colors.amber : Colors.white,
+                            fontWeight: isLeader ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                        subtitle: Text(
+                          "Lvl ${member['level'] ?? 1} • ${member['raca'] ?? 'Humano'}",
+                          style: const TextStyle(color: Colors.white54),
+                        ),
+                        trailing: isLeader
+                            ? const Text("LÍDER", style: TextStyle(color: Colors.amber, fontSize: 12, fontWeight: FontWeight.bold))
+                            : null,
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
