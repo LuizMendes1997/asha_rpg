@@ -236,6 +236,7 @@ class HeroModel {
     this.questProgress = 0,
     this.currentQuestId,
     this.elementalStats,
+    this.clanId,
   });
   // Adicione em HeroModel.dart
   void fundirItens(Item item1, Item item2) {
@@ -290,6 +291,7 @@ class HeroModel {
       'equipped_necklace': equippedNecklace?.toMap(),
       'equipped_ring': equippedRing?.toMap(),
       'equipped_ring2': equippedRing2?.toMap(),
+      'clan_id': clanId,
     };
   }
 
@@ -312,7 +314,8 @@ class HeroModel {
       questProgress: map['quest_progress'] ?? 0,
       currentQuestId: map['current_quest_id'],
       missoesCompletadas: map['missoes_completadas'] ?? 0,
-      elementalStats: map['elemental_stats'], // Recuperando do banco
+      elementalStats: map['elemental_stats'],
+      clanId: map['clan_id'],
     );
 
     if (map['warehouse'] != null) {

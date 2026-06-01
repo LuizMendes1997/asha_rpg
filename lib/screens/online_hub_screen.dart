@@ -4,6 +4,7 @@ import 'ranking_screen.dart'; // Import da sua tela de ranking original
 import 'ArenaBattleScreen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'clan_create_screen.dart';
+import 'clan_details_screen.dart';
 
 class OnlineHubScreen extends StatefulWidget {
   final HeroModel hero;
@@ -256,14 +257,37 @@ class _OnlineHubScreenState extends State<OnlineHubScreen> {
               ),
               _regionCard(
                 context,
-                "Faça seus clãs raparigas",
-                "Una os maiores guerreiros de todo o reino",
-                "assets/icons/ranking.webp", // Ícone de troféu ou ranking
+                "Sistema de Clãs", // Mudei o nome para algo mais épico
+                widget.hero.clanId != null
+                    ? "Gerencie seu clã e veja seus aliados"
+                    : "Una os maiores guerreiros de todo o reino",
+                "assets/icons/ranking.webp",
                 () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => ClanCreateScreen()),
-                  );
+                  // LÓGICA DE REDIRECIONAMENTO
+                  if (widget.hero.clanId != null &&
+                      widget.hero.clanId!.isNotEmpty) {
+                    // Se JÁ TEM clã, vai para os DETALHES
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            ClanDetailsScreen(clanId: widget.hero.clanId!),
+                      ),
+                    ).then((_) => widget.onUpdate()); // Atualiza ao voltar
+                  } else {
+                    // Se NÃO TEM clã, vai para a CRIAÇÃO
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ClanCreateScreen(),
+                      ),
+                    ).then((v) {
+                      // Se a criação retornar true, significa que o clã foi criado
+                      if (v == true) {
+                        widget.onUpdate();
+                      }
+                    });
+                  }
                 },
               ),
             ],
