@@ -135,7 +135,6 @@ class _InventoryScreenState extends State<InventoryScreen> {
             ),
           ),
           child: ListTile(
-            // Ícone do item com o distintivo rúnico elemental no canto inferior direito
             leading: Stack(
               children: [
                 Container(
@@ -268,16 +267,44 @@ class _InventoryScreenState extends State<InventoryScreen> {
                   ),
                 ],
               ),
+              // 🌟 CONTEÚDO CENTRAL: AVATAR DINÂMICO DO HERÓI (PUXADO DO BANCO)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
                   children: [
-                    const Icon(Icons.person, size: 140, color: Colors.white10),
+                    Container(
+                      width: 140,
+                      height: 140,
+                      alignment: Alignment.center,
+                      child:
+                          widget.hero.emblemaPath != null &&
+                              widget.hero.emblemaPath!.isNotEmpty
+                          ? Image.asset(
+                              widget.hero.emblemaPath!,
+                              fit: BoxFit.contain,
+                              filterQuality: FilterQuality.none,
+                              errorBuilder: (context, error, stackTrace) {
+                                // Caso o path dê erro, mostra um fallback visual legal
+                                return const Icon(
+                                  Icons.person,
+                                  size: 100,
+                                  color: Colors.white10,
+                                );
+                              },
+                            )
+                          : const Icon(
+                              Icons.person,
+                              size: 100,
+                              color: Colors.white10,
+                            ),
+                    ),
+                    const SizedBox(height: 5),
                     Text(
                       widget.hero.name.toUpperCase(),
                       style: const TextStyle(
                         color: Colors.amber,
                         fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
                       ),
                     ),
                   ],
@@ -387,16 +414,12 @@ class _InventoryScreenState extends State<InventoryScreen> {
                     ),
                   ),
           ),
-
-          // 🔮 MOLDE REDONDO NO CANTO DIREITO INFERIOR DO SLOT DO EQUIPAMENTO
           if (item != null)
             Positioned(
               right: 4,
               bottom: 4,
               child: _buildElementBadge(item.elemento),
             ),
-
-          // Nível de Upgrade (+N) deslocado um pouco para a esquerda para não encavalar com o Elemento
           if (item != null && item.level > 0)
             Positioned(
               left: 4,

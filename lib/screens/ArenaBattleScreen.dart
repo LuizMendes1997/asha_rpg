@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 // ==========================================
 
 class ArenaOpponent {
+  final String imagePath;
   final String id;
   final String username;
   final int level;
@@ -26,11 +27,13 @@ class ArenaOpponent {
     required this.maxHp,
     required this.elementalStats,
     required this.raca,
+    required this.imagePath, // Adicione no construtor
   }) : currentHp = maxHp;
 }
 
 // Simulando seu HeroModel atual para o código compilar direto
 class ArenaHeroModel {
+  final String imagePath; // Adicione isso
   final String id;
   final String name;
   final int level;
@@ -53,6 +56,7 @@ class ArenaHeroModel {
     required this.elementalStats,
     required this.raca,
     this.gold = 0,
+    required this.imagePath, // Adicione no construtor
   });
 }
 
@@ -423,6 +427,7 @@ class _ArenaBattleScreenState extends State<ArenaBattleScreen> {
                 children: [
                   // --- PLAYER ---
                   _buildCardCombatente(
+                    imagePath: widget.player.imagePath, // Passando o dado
                     nome: widget.player.name,
                     raca: widget.player.raca,
                     level: widget.player.level,
@@ -458,6 +463,7 @@ class _ArenaBattleScreenState extends State<ArenaBattleScreen> {
 
                   // --- OPONENTE ---
                   _buildCardCombatente(
+                    imagePath: widget.opponent.imagePath, // Passando o dado
                     nome: widget.opponent.username,
                     raca: widget.opponent.raca,
                     level: widget.opponent.level,
@@ -534,6 +540,7 @@ class _ArenaBattleScreenState extends State<ArenaBattleScreen> {
   }
 
   Widget _buildCardCombatente({
+    required String imagePath, // Adicione este parâmetro
     required String nome,
     required String raca,
     required int level,
@@ -590,7 +597,7 @@ class _ArenaBattleScreenState extends State<ArenaBattleScreen> {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(14),
                   child: Image.asset(
-                    'assets/hero_placeholder.webp',
+                    imagePath,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
                       return Icon(

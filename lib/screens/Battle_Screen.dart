@@ -31,7 +31,7 @@ class _BattleScreenState extends State<BattleScreen> {
   int currentEnemyIndex = 0;
   List<MonsterDamageInfo> _activeDamagesOnMonsters = [];
   List<int> _evadingMonsters = [];
-  String _statusElementalInfo = ""; // Novo: Armazena o status compacto do topo
+  String _statusElementalInfo = "";
 
   // Controles de Animação e Delay
   bool _isAttacking = false;
@@ -44,6 +44,8 @@ class _BattleScreenState extends State<BattleScreen> {
     super.initState();
     enemiesHP = widget.enemies.map((e) => e.hp).toList().cast<int>();
     battleLog = widget.startMessage;
+    // 🎯 Calcula o status do primeiro monstro logo ao abrir a tela
+    _statusElementalInfo = _calcularStatusElementalAtual();
   }
 
   void _triggerMonsterEvade(int index) {
@@ -57,7 +59,6 @@ class _BattleScreenState extends State<BattleScreen> {
 
   // 🛡️ MÉTODOS AUXILIARES PARA O SISTEMA ELEMENTAL
 
-  // Retorna o elemento contra o qual o elemento atual é forte
   Elemento _obterVantagem(Elemento elem) {
     switch (elem) {
       case Elemento.fogo:
@@ -73,7 +74,6 @@ class _BattleScreenState extends State<BattleScreen> {
     }
   }
 
-  // Retorna uma string estilizada para enriquecer o Battle Log
   String _obterTagElemental(Elemento elem) {
     switch (elem) {
       case Elemento.fogo:
@@ -87,6 +87,30 @@ class _BattleScreenState extends State<BattleScreen> {
       default:
         return "";
     }
+  }
+
+  // 🔮 NOVO METODO: Calcula o confronto elemental do alvo atual a qualquer momento
+  String _calcularStatusElementalAtual() {
+    if (currentEnemyIndex >= widget.enemies.length) return "";
+
+    Monster alvo = widget.enemies[currentEnemyIndex];
+    Map<Elemento, int> bonusAtivos = widget.hero.obterBonusElementaisAtivos();
+
+    if (bonusAtivos.isNotEmpty && alvo.elemento != Elemento.nenhum) {
+      Elemento elementoHeroi = bonusAtivos.keys.first;
+      int quantidadePecas = bonusAtivos[elementoHeroi]!;
+      int atkelemental = quantidadePecas * 5;
+      double danoBase = (widget.hero.totalStr).toDouble();
+      danoBase = danoBase * (atkelemental / 100);
+      String emojiHeroi = _obterTagElemental(elementoHeroi).split('[').first;
+
+      if (_obterVantagem(elementoHeroi) == alvo.elemento) {
+        return "$emojiHeroi vs ${alvo.elemento.name.toUpperCase()}: +$atkelemental% Total de $danoBase a mais.";
+      } else if (_obterVantagem(alvo.elemento) == elementoHeroi) {
+        return "$emojiHeroi vs ${alvo.elemento.name.toUpperCase()}: -25%";
+      }
+    }
+    return "";
   }
 
   // --- LÓGICA DE TURNO COMPLETA COM CÁLCULO ELEMENTAL ---
@@ -106,7 +130,7 @@ class _BattleScreenState extends State<BattleScreen> {
       if (monsterEvaded) {
         battleLog =
             "${widget.enemies[currentEnemyIndex].name} desviou do seu ataque!";
-        _statusElementalInfo = ""; // Limpa se errou
+        _statusElementalInfo = ""; // Limpa temporariamente se errou o golpe
         _triggerMonsterEvade(currentEnemyIndex);
       } else {
         Monster Alvo = widget.enemies[currentEnemyIndex];
@@ -115,50 +139,33 @@ class _BattleScreenState extends State<BattleScreen> {
         double danoBase = (widget.hero.totalStr - Alvo.def).toDouble();
         if (danoBase < 1) danoBase = 1;
 
-        // Verifica se o herói ativou algum bônus elemental (Mínimo de 3 peças equipadas)
         Map<Elemento, int> bonusAtivos = widget.hero
             .obterBonusElementaisAtivos();
-
         double modificadorElemental = 1.0;
         String logEfeitoElemental = "";
 
         if (bonusAtivos.isNotEmpty) {
-          // O herói assume a propriedade do seu elemento predominante ativo
           Elemento elementoHeroi = bonusAtivos.keys.first;
           int quantidadePecas = bonusAtivos[elementoHeroi]!;
-
-          // Aplica o bônus de 5% por peça nativa do set
-          danoBase += danoBase * (quantidadePecas / 100);
+          int atkelemental = quantidadePecas * 5;
+          danoBase += danoBase * (atkelemental / 100);
 
           // ⚖️ SISTEMA COMBATENTE DA RODA ELEMENTAL
           if (Alvo.elemento != Elemento.nenhum) {
-            String emojiHeroi = _obterTagElemental(
-              elementoHeroi,
-            ).split('[').first;
-
             if (_obterVantagem(elementoHeroi) == Alvo.elemento) {
-              // Vantagem total: +25% de Dano Real
-              modificadorElemental = 1.25;
+              modificadorElemental = 1.0;
               logEfeitoElemental =
-                  "\n✨ Ataque Eficaz! O poder de ${_obterTagElemental(elementoHeroi)} sobrepujou o ${_obterTagElemental(Alvo.elemento)} do inimigo! (+25%)";
-              _statusElementalInfo =
-                  "$emojiHeroi vs ${Alvo.elemento.name.toUpperCase()}: +25%";
+                  "\n✨ Ataque Eficaz! O poder de ${_obterTagElemental(elementoHeroi)} sobrepujou o ${_obterTagElemental(Alvo.elemento)} do inimigo! $atkelemental%";
             } else if (_obterVantagem(Alvo.elemento) == elementoHeroi) {
-              // Desvantagem total: -25% de Dano Real
               modificadorElemental = 0.75;
               logEfeitoElemental =
                   "\n📉 Ataque Ineficaz... O elemento ${_obterTagElemental(Alvo.elemento)} do inimigo resistiu ao seu ${_obterTagElemental(elementoHeroi)}! (-25%)";
-              _statusElementalInfo =
-                  "$emojiHeroi vs ${Alvo.elemento.name.toUpperCase()}: -25%";
-            } else {
-              _statusElementalInfo = "";
             }
-          } else {
-            _statusElementalInfo = "";
           }
-        } else {
-          _statusElementalInfo = "";
         }
+
+        // Atualiza o topo com o status calculado da nova função
+        _statusElementalInfo = _calcularStatusElementalAtual();
 
         // Consolidação do cálculo final de dano
         int damageToMonster = (danoBase * modificadorElemental).toInt();
@@ -172,16 +179,15 @@ class _BattleScreenState extends State<BattleScreen> {
           ),
         );
 
+        damageToMonster = damageToMonster - Alvo.def;
         enemiesHP[currentEnemyIndex] -= damageToMonster;
-
-        // Log customizado com as informações elementais ocorridas no cálculo
         battleLog =
             "Você atacou ${Alvo.name} e causou $damageToMonster de dano!$logEfeitoElemental";
 
         if (enemiesHP[currentEnemyIndex] <= 0) {
           currentEnemyIndex++;
-          _statusElementalInfo =
-              ""; // Limpa o status temporário quando o monstro morre
+          // 🔄 Monstro morreu? Calcula imediatamente o status para o PRÓXIMO monstro da lista
+          _statusElementalInfo = _calcularStatusElementalAtual();
         }
       }
       _slashTargetIndex = null;
@@ -198,7 +204,7 @@ class _BattleScreenState extends State<BattleScreen> {
     int rawMonsterDamage = 0;
     for (int i = currentEnemyIndex; i < widget.enemies.length; i++) {
       if (enemiesHP[i] > 0) {
-        setState(() => _attackingMonsterIndex = i); // Monstro pula
+        setState(() => _attackingMonsterIndex = i);
         rawMonsterDamage += widget.enemies[i].atk;
         await Future.delayed(const Duration(milliseconds: 150));
         setState(() => _attackingMonsterIndex = null);
@@ -210,9 +216,14 @@ class _BattleScreenState extends State<BattleScreen> {
 
     setState(() {
       widget.hero.hp -= effectiveDamage;
-      _showRedFlash = true; // Tela vermelha
+      _showRedFlash = true;
       battleLog +=
           "\nOs monstros revidam! Você recebeu $effectiveDamage de dano.";
+
+      // Se o herói sobreviveu e tinha limpado o painel por causa de um desvio, restaura o preview do alvo atual
+      if (widget.hero.hp > 0 && _statusElementalInfo.isEmpty) {
+        _statusElementalInfo = _calcularStatusElementalAtual();
+      }
     });
 
     await Future.delayed(const Duration(milliseconds: 100));
@@ -223,7 +234,6 @@ class _BattleScreenState extends State<BattleScreen> {
       return;
     }
 
-    // Cooldown final para totalizar ~1 segundo
     await Future.delayed(const Duration(milliseconds: 300));
     if (mounted) setState(() => _isAttacking = false);
   }
@@ -239,7 +249,6 @@ class _BattleScreenState extends State<BattleScreen> {
       totalExp += m.expValue;
       totalGold += 5;
 
-      // Progresso de Missão
       for (var quest in widget.hero.activeQuests) {
         if (!quest.isCompleted &&
             m.name.toLowerCase().contains(
@@ -334,7 +343,7 @@ class _BattleScreenState extends State<BattleScreen> {
 
   void _handleDefeat() {
     widget.hero.hp = 0;
-    widget.hero.gold = (widget.hero.gold * 0.7).toInt(); // Perde 30%
+    widget.hero.gold = (widget.hero.gold * 0.7).toInt();
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -378,10 +387,9 @@ class _BattleScreenState extends State<BattleScreen> {
 
   void _onDamageAnimationComplete(Key damageKey) {
     if (!mounted) return;
-    setState(
-      () =>
-          _activeDamagesOnMonsters.removeWhere((info) => info.key == damageKey),
-    );
+    setState(() {
+      _activeDamagesOnMonsters.removeWhere((info) => info.key == damageKey);
+    });
   }
 
   @override
@@ -391,7 +399,6 @@ class _BattleScreenState extends State<BattleScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // Background
           Positioned.fill(
             child: Image.asset(
               widget.backgroundImage,
@@ -400,13 +407,10 @@ class _BattleScreenState extends State<BattleScreen> {
               colorBlendMode: BlendMode.darken,
             ),
           ),
-
-          // Flash de Dano
           if (_showRedFlash)
             Positioned.fill(
               child: Container(color: Colors.red.withOpacity(0.3)),
             ),
-
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(20),
@@ -420,8 +424,6 @@ class _BattleScreenState extends State<BattleScreen> {
                       letterSpacing: 3,
                     ),
                   ),
-
-                  // Novo Widget: Exibição compacta do status elemental logo abaixo do título
                   if (_statusElementalInfo.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 5),
@@ -436,8 +438,6 @@ class _BattleScreenState extends State<BattleScreen> {
                         ),
                       ),
                     ),
-
-                  // Arena
                   Expanded(
                     flex: 3,
                     child: MonsterArena(
@@ -450,11 +450,8 @@ class _BattleScreenState extends State<BattleScreen> {
                       onDamageAnimationComplete: _onDamageAnimationComplete,
                     ),
                   ),
-
-                  // Log de Batalha Expandido
                   Container(
-                    height:
-                        100, // Leve aumento para comportar os logs elementais perfeitamente
+                    height: 100,
                     width: double.infinity,
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
@@ -473,8 +470,6 @@ class _BattleScreenState extends State<BattleScreen> {
                     ),
                   ),
                   const SizedBox(height: 15),
-
-                  // Controles do Jogador
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(

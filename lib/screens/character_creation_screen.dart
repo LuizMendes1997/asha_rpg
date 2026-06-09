@@ -46,7 +46,6 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
     return "assets/races/$folder${isMale ? "_m.webp" : "_f.webp"}";
   }
 
-  // Widget para mostrar as barrinhas/valores de atributos
   Widget _buildAttributeRow(String label, String value, Color color) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
@@ -90,6 +89,9 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
     if (user == null) return;
 
     final raceData = races[selectedRaceIndex];
+    final String imagePath = currentImagePath;
+
+    // Criando o objeto HeroModel incluindo a imagem
     final hero = HeroModel(
       id: user.id,
       name: name,
@@ -99,6 +101,7 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
       maxHp: raceData['attr']['HP'],
       hp: raceData['attr']['HP'],
       gold: 500,
+      emblemaPath: imagePath, // Certifique-se de que HeroModel recebe isso
     );
 
     try {
@@ -119,7 +122,11 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
         'max_tower_floor': 0,
         'current_quest_id': null,
         'quest_progress': 0,
+        'emblema_path': imagePath,
       });
+
+      // Atraso de 2 segundos para processar a "forja" e garantir sincronia
+      await Future.delayed(const Duration(seconds: 2));
 
       if (mounted) {
         Navigator.of(context).pushReplacement(
@@ -127,10 +134,11 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
         );
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Erro: $e"), backgroundColor: Colors.red),
         );
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -182,7 +190,7 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
               ),
               const SizedBox(height: 20),
 
-              // SELETOR DE RAÇA (Corrigido para evitar overflow)
+              // SELETOR DE RAÇA
               Row(
                 children: [
                   _navButton(Icons.arrow_back_ios, () {
@@ -229,7 +237,7 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
                 ),
               ),
 
-              // ATRIBUTOS (Recolocados)
+              // ATRIBUTOS
               Container(
                 margin: const EdgeInsets.symmetric(vertical: 15),
                 padding: const EdgeInsets.all(12),
@@ -284,7 +292,16 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
               ),
               const SizedBox(height: 35),
               _isLoading
-                  ? const CircularProgressIndicator(color: Colors.amber)
+                  ? Column(
+                      children: const [
+                        CircularProgressIndicator(color: Colors.amber),
+                        SizedBox(height: 10),
+                        Text(
+                          "FORJANDO...",
+                          style: TextStyle(color: Colors.amber),
+                        ),
+                      ],
+                    )
                   : SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(

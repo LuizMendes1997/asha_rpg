@@ -28,58 +28,97 @@ class WorldMap extends StatelessWidget {
       } else if (sorteio < 0.20) {
         inimigos = [MonsterData.cobra, MonsterData.cobra];
         mensagem = "Uma cobra venenosa bloqueia o caminho!";
-      } else if (sorteio < 0.55) {
-        inimigos = [MonsterData.abelha, MonsterData.abelha, MonsterData.abelha];
-        mensagem = "Um bando de abelhas cercou você!";
+      } else if (sorteio < 0.40) {
+        // 🌟 Grupo misto com a nova Vespa
+        inimigos = [
+          MonsterData.abelha,
+          MonsterData.vespaMutante,
+          MonsterData.abelha,
+        ];
+        mensagem = "Uma Vespa Mutante lidera um enxame contra você!";
+      } else if (sorteio < 0.65) {
+        // 🌟 Novo monstro solo ou dupla
+        inimigos = [MonsterData.espantalhoAssombrado];
+        mensagem = "O Espantalho Assombrado se moveu! Ataque!";
       } else {
-        inimigos = [MonsterData.rato];
-        mensagem = "Um rato, ataque!";
+        inimigos = [MonsterData.rato, MonsterData.rato];
+        mensagem = "Ratos de Esgoto correm em sua direção!";
       }
     } else if (regiao == "Floresta Esquecida") {
       imagemFundo = "assets/images/floresta.webp";
       if (sorteio < 0.05) {
         inimigos = [MonsterData.rainhaAranha];
-        mensagem =
-            "Teias por todo lado... A Aranha de Elite desce das árvores!";
+        mensagem = "Teias por todo lado... A Rainha Aranha desce das árvores!";
       } else if (sorteio < 0.20) {
         inimigos = [MonsterData.lobo, MonsterData.lobo];
         mensagem = "Lobos Selvagens cercam você rosnando!";
-      } else if (sorteio < 0.55) {
-        inimigos = [MonsterData.goblin, MonsterData.slime, MonsterData.goblin];
-        mensagem = "Uma emboscada! Goblins e Slimes surgem do mato!";
+      } else if (sorteio < 0.40) {
+        // 🌟 Novo monstro parrudo (Urso)
+        inimigos = [MonsterData.ursoCinzento];
+        mensagem = "Um enorme Urso Cinzento ruge e bloqueia a passagem!";
+      } else if (sorteio < 0.65) {
+        // 🌟 Novo monstro mágico (Fada) com Goblins
+        inimigos = [
+          MonsterData.goblin,
+          MonsterData.fadaTravessa,
+          MonsterData.goblin,
+        ];
+        mensagem =
+            "Uma Fada Travessa guiou os Goblins até você! É uma emboscada!";
       } else {
-        inimigos = [MonsterData.slime];
-        mensagem = "Um slime na área.";
+        inimigos = [MonsterData.slime, MonsterData.slime];
+        mensagem = "Alguns slimes na área.";
       }
     } else if (regiao == "Acampamento de Bandidos") {
       imagemFundo = "assets/images/acampamento.webp";
       if (sorteio < 0.05) {
         inimigos = [MonsterData.liderBandido];
-        mensagem = "O mais forte chegou, corraaaaa!";
-      } else if (sorteio < 0.20) {
+        mensagem = "O Líder Bandido chegou, corraaaaa!";
+      } else if (sorteio < 0.15) {
         inimigos = [MonsterData.viceLider];
-        mensagem = "O vice Lider te encara";
-      } else if (sorteio < 0.55) {
+        mensagem = "O Vice-Líder te encara com desprezo!";
+      } else if (sorteio < 0.30) {
         inimigos = [MonsterData.acougueiro];
-        mensagem = "Um açougueiro quer te matar!";
+        mensagem = "O Açougueiro quer fatiar você!";
+      } else if (sorteio < 0.45) {
+        inimigos = [MonsterData.assassino];
+        mensagem = "Um Assassino surge das sombras!";
+      } else if (sorteio < 0.75) {
+        // 🌟 Patrulha de Saqueadores comuns
+        inimigos = [
+          MonsterData.saqueadorMercenario,
+          MonsterData.saqueadorMercenario,
+        ];
+        mensagem =
+            "Uma patrulha de Saqueadores Mercenários barrou seu caminho!";
       } else {
-        inimigos = [MonsterData.assasino];
-        mensagem = "Uma assasino!";
+        // 🌟 Cães de guarda do acampamento
+        inimigos = [MonsterData.caoDeCaca, MonsterData.caoDeCaca];
+        mensagem = "Cães de Caça famintos correm latindo na sua direção!";
       }
     } else if (regiao == "Lagoa Encantada") {
       imagemFundo = "assets/images/lagoa.webp";
       if (sorteio < 0.05) {
         inimigos = [MonsterData.leviata];
-        mensagem = "O mais forte chegou, corraaaaa!";
-      } else if (sorteio < 0.20) {
+        mensagem = "O soberano dos mares desperta: Leviatã!";
+      } else if (sorteio < 0.15) {
         inimigos = [MonsterData.tritao];
-        mensagem = "O tritao te encara";
+        mensagem = "O Tritão ergue seu tridente e te encara!";
+      } else if (sorteio < 0.35) {
+        // 🌟 Nova criatura mágica da lagoa
+        inimigos = [MonsterData.sereiaCorrompida];
+        mensagem =
+            "O canto melancólico de uma Sereia Corrompida ecoa pela lagoa!";
       } else if (sorteio < 0.55) {
         inimigos = [MonsterData.driade];
-        mensagem = "Uma driade corrompida quer te matar!";
+        mensagem = "Uma Dríade corrom ida emerge das árvores!";
+      } else if (sorteio < 0.75) {
+        // 🌟 Novo predador robusto da água
+        inimigos = [MonsterData.jacareDoPantano];
+        mensagem = "Olhos perigosos na água... Um Jacaré do Pântano ataca!";
       } else {
         inimigos = [MonsterData.verme, MonsterData.verme];
-        mensagem = "Vermes!";
+        mensagem = "Vermes nojentos surgem da lama!";
       }
     }
 

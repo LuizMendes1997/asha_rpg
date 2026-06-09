@@ -40,6 +40,23 @@ class Item {
     this.level = 0,
     this.def = 0,
     this.hpBonus = 0,
+    this.elemento = Elemento
+        .nenhum, // Ajustado para corresponder ao enum local se necessário, mantido conforme seu escopo
+    this.raridade = Raridade.normal,
+  });
+
+  // Fallback caso use Elemento.nenhum do enum acima
+  Item.withElemento({
+    required this.name,
+    required this.type,
+    required this.iconPath,
+    this.power = 0,
+    this.price = 0,
+    this.quantity = 1,
+    this.isStackable = true,
+    this.level = 0,
+    this.def = 0,
+    this.hpBonus = 0,
     this.elemento = Elemento.nenhum,
     this.raridade = Raridade.normal,
   });
@@ -62,7 +79,7 @@ class Item {
   }
 
   factory Item.fromMap(Map<String, dynamic> map) {
-    return Item(
+    return Item.withElemento(
       name: map['name'],
       type: ItemType.values[map['type']],
       iconPath: map['iconPath'],
@@ -112,7 +129,7 @@ class Item {
   }
 
   Item copy() {
-    return Item(
+    return Item.withElemento(
       name: name,
       type: type,
       iconPath: iconPath,
@@ -141,7 +158,7 @@ class Item {
     final elementoSorteado =
         elementosValidos[random.nextInt(elementosValidos.length)];
 
-    return Item(
+    return Item.withElemento(
       name: name,
       type: type,
       iconPath: iconPath,
@@ -180,10 +197,7 @@ class Monster {
 }
 
 class HeroModel {
-  // Adicione dentro de HeroModel
   String? clanId;
-  // Como você não quer mudar muito sua estrutura, vamos deixar o objeto Clan
-  // opcional no HeroModel para facilitar o acesso rápido.
   Clan? myClan;
   int missoesCompletadas;
   String? id;
@@ -206,6 +220,9 @@ class HeroModel {
 
   // Nova variável local para armazenar a string formatada que vai pro Supabase
   String? elementalStats;
+
+  // 🛡️ Novo Atributo do Emblema / Imagem do herói para o banco
+  String? emblemaPath;
 
   List<Item> warehouse = [];
   Item? equippedWeapon;
@@ -237,8 +254,9 @@ class HeroModel {
     this.currentQuestId,
     this.elementalStats,
     this.clanId,
+    this.emblemaPath, // Adicionado no construtor
   });
-  // Adicione em HeroModel.dart
+
   void fundirItens(Item item1, Item item2) {
     if (item1.name != item2.name ||
         item1.raridade != item2.raridade ||
@@ -249,7 +267,7 @@ class HeroModel {
     warehouse.remove(item1);
     warehouse.remove(item2);
 
-    Item novoItem = Item(
+    Item novoItem = Item.withElemento(
       name: item1.name,
       type: item1.type,
       iconPath: item1.iconPath,
@@ -282,7 +300,9 @@ class HeroModel {
       'quest_progress': questProgress,
       'current_quest_id': currentQuestId,
       'missoes_completadas': missoesCompletadas,
-      'elemental_stats': elementalStats, // Adicionado no mapa de persistência
+      'elemental_stats': elementalStats,
+      'clan_id': clanId,
+      'emblema_path': emblemaPath, // Mapeado para a nova coluna no Supabase
       'warehouse': warehouse.map((i) => i.toMap()).toList(),
       'equipped_weapon': equippedWeapon?.toMap(),
       'equipped_armor': equippedArmor?.toMap(),
@@ -291,7 +311,6 @@ class HeroModel {
       'equipped_necklace': equippedNecklace?.toMap(),
       'equipped_ring': equippedRing?.toMap(),
       'equipped_ring2': equippedRing2?.toMap(),
-      'clan_id': clanId,
     };
   }
 
@@ -316,6 +335,7 @@ class HeroModel {
       missoesCompletadas: map['missoes_completadas'] ?? 0,
       elementalStats: map['elemental_stats'],
       clanId: map['clan_id'],
+      emblemaPath: map['emblema_path'], // Recuperando da nova coluna do banco
     );
 
     if (map['warehouse'] != null) {
@@ -342,15 +362,40 @@ class HeroModel {
   }
 
   Future<void> saveToSupabase() async {
-    if (id == null) return;
+    if (id == null || id!.isEmpty) {
+      final sessionUser = Supabase.instance.client.auth.currentUser;
+      if (sessionUser != null) {
+        id = sessionUser.id;
+        debugPrint(
+          "⚡ ID do Herói estava nulo, mas foi recuperado da sessão do Supabase: $id",
+        );
+      } else {
+        debugPrint(
+          "🚨 ERRO CRÍTICO: Não foi possível salvar. O ID do herói está nulo e não há nenhum usuário logado no Supabase.",
+        );
+        return;
+      }
+    }
+
     try {
+      debugPrint(
+        "🔄 Tentando salvar dados do herói no Supabase para o ID: $id...",
+      );
+
+      final dadosParaSalvar = this.toMap();
+
       await Supabase.instance.client
           .from('profiles')
-          .update(this.toMap())
+          .update(dadosParaSalvar)
           .eq('id', id!);
-      debugPrint("Dados salvos com sucesso.");
+
+      debugPrint("✅ Dados salvos com sucesso no Supabase!");
     } catch (e) {
-      debugPrint("Erro ao salvar dados: $e");
+      debugPrint("❌❌ ERRO AO SALVAR NO SUPABASE ❌❌");
+      debugPrint("Detalhe do Erro: $e");
+      debugPrint(
+        "Certifique-se de que todas as colunas do toMap() existem na tabela 'profiles'.",
+      );
     }
   }
 
@@ -369,7 +414,6 @@ class HeroModel {
     ];
 
     for (var item in equipamentosAtuais) {
-      // Corrigido aqui: Removido o Elemento.none que não existia no enum
       if (item != null && item.elemento != Elemento.nenhum) {
         contagemPecas[item.elemento] = (contagemPecas[item.elemento] ?? 0) + 1;
       }
@@ -379,7 +423,7 @@ class HeroModel {
 
     contagemPecas.forEach((elemento, quantidade) {
       if (quantidade >= 3) {
-        bonusAtivados[elemento] = quantidade * 5;
+        bonusAtivados[elemento] = quantidade;
       }
     });
 
@@ -392,7 +436,6 @@ class HeroModel {
     if (bonus.isEmpty) {
       elementalStats = null;
     } else {
-      // Cria a string no formato "index_elemento:porcentagem,index_elemento:porcentagem"
       elementalStats = bonus.entries
           .map((e) => "${e.key.index}:${e.value}")
           .join(',');
@@ -554,7 +597,7 @@ class HeroModel {
     }
     warehouse.remove(item);
     calculateStats();
-    atualizarCacheElemental(); // Atualiza a string do cache antes de salvar
+    atualizarCacheElemental();
     saveToSupabase();
   }
 
@@ -596,7 +639,7 @@ class HeroModel {
     if (removed != null) {
       addItem(removed);
       calculateStats();
-      atualizarCacheElemental(); // Atualiza a string do cache antes de salvar
+      atualizarCacheElemental();
       saveToSupabase();
     }
   }
