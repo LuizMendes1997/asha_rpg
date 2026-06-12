@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'dart:math';
 import '../models/game_state.dart';
 import 'guild_screen.dart';
 import 'LinhagemScreen.dart';
 import 'chat_screen.dart';
-import 'ArenaBattleScreen.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'ShopScreen.dart';
+import 'ranking_screen.dart';
 
 class VillageScreen extends StatefulWidget {
   final HeroModel hero;
@@ -18,6 +19,7 @@ class VillageScreen extends StatefulWidget {
 
 class _VillageScreenState extends State<VillageScreen> {
   int get precoEstalagem => (widget.hero.maxHp / 2).toInt();
+
   void _descansar() {
     if (widget.hero.gold >= precoEstalagem) {
       if (widget.hero.hp >= widget.hero.totalMaxHp) {
@@ -63,6 +65,8 @@ class _VillageScreenState extends State<VillageScreen> {
           width: 40,
           height: 40,
           filterQuality: FilterQuality.none,
+          errorBuilder: (_, __, ___) =>
+              const Icon(Icons.location_on, color: Colors.white38, size: 40),
         ),
         title: Text(
           title,
@@ -85,7 +89,6 @@ class _VillageScreenState extends State<VillageScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Removido o AppBar para usar o Card customizado dentro do body
       body: Stack(
         children: [
           // --- 1. IMAGEM DE FUNDO ---
@@ -123,16 +126,16 @@ class _VillageScreenState extends State<VillageScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Image.asset(
-                        'assets/icons/vila.webp', // Ícone da Vila
+                        'assets/icons/vila.webp',
                         height: 32,
                         filterQuality: FilterQuality.none,
                       ),
                       const SizedBox(width: 12),
-                      Flexible(
+                      const Flexible(
                         child: Text(
                           "Village",
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Colors.white,
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
@@ -226,7 +229,7 @@ class _VillageScreenState extends State<VillageScreen> {
                 context,
                 "Templo da Ancestralidade",
                 "Evolua seu sangue e desperte novos poderes",
-                "assets/icons/linhagem.webp", // Certifique-se de ter esse ícone ou use um temporário
+                "assets/icons/linhagem.webp",
                 () {
                   Navigator.push(
                     context,
@@ -243,7 +246,7 @@ class _VillageScreenState extends State<VillageScreen> {
                 context,
                 "Guilda",
                 "Recompensas e missões de aventureiros",
-                "assets/icons/guilda.webp", // Sugestão: troque para assets/icons/guilda.webp se tiver
+                "assets/icons/guilda.webp",
                 () {
                   Navigator.push(
                     context,
@@ -260,7 +263,7 @@ class _VillageScreenState extends State<VillageScreen> {
                 context,
                 "Chat",
                 "Fale bem e chama geral pra porrada",
-                "assets/icons/guilda.webp", // Sugestão: troque para assets/icons/guilda.webp se tiver
+                "assets/icons/guilda.webp",
                 () {
                   Navigator.push(
                     context,
@@ -273,9 +276,113 @@ class _VillageScreenState extends State<VillageScreen> {
                   );
                 },
               ),
+              _regionCard(
+                context,
+                "Mural dos Lendários",
+                "Contemple o Ranking Mundial de Heróis",
+                "assets/icons/ranking.webp",
+                () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const RankingScreen(),
+                    ),
+                  );
+                },
+              ),
             ],
           ),
+
+          // 🎁 PRESENTE ANIMADO NO CANTO SUPERIOR DIREITO
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 16,
+            right: 16,
+            child: WigglingGift(hero: widget.hero, onUpdate: widget.onUpdate),
+          ),
         ],
+      ),
+    );
+  }
+}
+
+// 🎁 WIDGET DE ANIMAÇÃO DO PRESENTE
+class WigglingGift extends StatefulWidget {
+  final HeroModel hero;
+  final VoidCallback onUpdate;
+
+  const WigglingGift({super.key, required this.hero, required this.onUpdate});
+
+  @override
+  State<WigglingGift> createState() => _WigglingGiftState();
+}
+
+class _WigglingGiftState extends State<WigglingGift>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    // A animação dura 2 segundos e fica repetindo
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        // Cálculo matemático para fazer ele tremer rápido e depois pausar.
+        final progress = _controller.value;
+        double angle = 0.0;
+
+        // Só treme durante os primeiros 30% do tempo (para dar uma pausa natural depois)
+        if (progress < 0.3) {
+          angle = sin(progress * 8 * pi) * 0.2;
+        }
+
+        return Transform.rotate(angle: angle, child: child);
+      },
+      child: GestureDetector(
+        onTap: () {
+          // 🛒 NAVEGANDO PARA A LOJA E PASSANDO OS DADOS
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) =>
+                  ShopScreen(hero: widget.hero, onUpdate: widget.onUpdate),
+            ),
+          );
+        },
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.red[800],
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.amber, width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.redAccent.withOpacity(0.6),
+                blurRadius: 8,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          child: const Icon(
+            Icons.card_giftcard,
+            color: Colors.white,
+            size: 28, // Tamanho ideal ajustado diretamente no ícone
+          ),
+        ),
       ),
     );
   }
